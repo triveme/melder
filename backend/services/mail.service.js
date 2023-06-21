@@ -12,6 +12,7 @@ const RECIPIENTS = {
   public_toilets:process.env.PUBLIC_TOILETS,
   parks:process.env.PARKS,
   leisure_facilities:process.env.LEISURE_FACILITIES,
+  lamps:process.env.LAMPS,
   other:process.env.OTHER,
 };
 
@@ -90,7 +91,7 @@ function buildHtmlBody(data) {
   } else {
     htmlBody += `
         <br><strong>Ort:</strong> ${data.city}<br>
-        <strong>Postzeitzahl:</strong> ${data.zip}<br>
+        <strong>Postleitzahl:</strong> ${data.zip}<br>
         <strong>Adresse:</strong> ${data.street + " " + data.house_no}<br>
         <a href="https://google.com/maps/?q=${data.city} ${data.zip} ${
       data.street

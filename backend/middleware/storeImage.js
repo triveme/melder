@@ -2,27 +2,6 @@ require("dotenv").config();
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 
-const imageFilter = (req, file, cb) => {
-  if (!file) {
-    cb(null, true);
-  }
-
-  if (
-    !file.mimetype.startsWith("image") ||
-    !file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG)$/)
-  ) {
-    console.error(
-      "Zur Zeit werden nur folgende Bildformate unterstüzt: jpg, jpeg, png"
-    );
-  }
-
-  if (parseInt(req.headers["content-length"]) > 10485760) {
-    cb("Das Bild ist zu groß (max. 10 MB)", false);
-  }
-
-  cb(null, true);
-};
-
 var storage = multer.diskStorage({
   destination: (req, file, cb) => {
     file ? cb(null, __basedir + process.env.IMAGE_DIR) : cb(null, "");
@@ -34,6 +13,16 @@ var storage = multer.diskStorage({
   },
 });
 
-var storeImage = multer({ storage: storage, fileFilter: imageFilter });
+const storeImage = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype == "image/png" || file.mimetype == "image/jpg" || file.mimetype == "image/jpeg") {
+        cb(null, true);
+    } else {
+        return cb(new Error('Zur Zeit werden nur folgende Bildformate unterstüzt: jpg, jpeg, png'));
+    }
+  },
+  limits: { fileSize: 104857600 },
+});
 
 module.exports = storeImage;
