@@ -77,7 +77,7 @@ export function FullInfoCard({ report }) {
               fontWeight: 600,
             }}
           >
-            Beschlussvorlage
+            Verlinkung
           </Link>
           <IconButton
             color="primary"

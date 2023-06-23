@@ -115,6 +115,11 @@ export const MAENGEL_CATEGORIES = [
     recipient: "leisure_facilities"
   },
   {
+    name: "Straßenbeleuchtung",
+    img: null,
+    recipient: "lamps"
+  },
+  {
     name: "Sonstiges",
     img: null,
     recipient: "other"
