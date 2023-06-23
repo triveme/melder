@@ -64,8 +64,8 @@ export const reporter = {
       startDate: "Start *",
       endDate: "Ende *",
       time: "Uhrzeit (ca.)",
-      pictureUpload: "Bild(er) hochladen (max. 3 - 10 MB, optional):",
-      pictureChange: "Bild(er) bearbeiten (max. 3 - 10 MB, optional):",
+      pictureUpload: "Bild(er) hochladen (optional):",
+      pictureChange: "Bild(er) bearbeiten (optional):",
       pictureRemove: "Bild löschen",
       redirection: "Umleitung hinzufügen",
       feedback:

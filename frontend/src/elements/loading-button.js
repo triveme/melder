@@ -94,13 +94,14 @@ export function LoadingAndCancelButtons(props) {
       })
       .catch((err) => {
         setLoading(false);
-        console.log(err);
         if (err.response) {
           snackActions.error(err.response.data.message);
-          console.log(err.response.data.message);
+          console.error(err.response.data.message);
           return;
+        } else {
+          snackActions.error(err);
+          console.error(err);
         }
-
         snackActions.error(err.toString());
       });
   };
