@@ -15,27 +15,21 @@ import { useStateContext } from "../providers/state-provider";
 
 import { useAdmins } from "../clients/admin-client";
 
-import {
-  AddDialog,
-  DeleteDialog,
-  EditDialog,
-} from "../components/administration/dialogs";
+import { AddDialog, DeleteDialog, EditDialog } from "../components/administration/dialogs";
+import { hasPermission } from "../utils/permission-utils";
 
-export function AdminPage() {
+export function UserManagementPage() {
   const { stateContext } = useStateContext();
 
-  const { admins } = useAdmins(
-    stateContext.authToken,
-    stateContext.queryTrigger
-  );
+  const { admins } = useAdmins(stateContext.authToken, stateContext.queryTrigger, stateContext.adminPermissions);
 
   return (
     <Box sx={{ width: "100%", padding: 3 }}>
-      {stateContext.authToken ? (
+      {stateContext.authToken && hasPermission(stateContext.adminPermissions, "admin_perm") ? (
         <Card>
           <CardContent>
             <Typography variant="h5" gutterBottom component="div">
-              Account Verwaltung
+              Nutzerverwaltung
             </Typography>
             <List>
               {admins !== undefined ? (
@@ -44,17 +38,8 @@ export function AdminPage() {
                     <Divider />
                     <ListItem>
                       <Grid container spacing={2}>
-                        <Grid
-                          item
-                          sm={12}
-                          md={6}
-                          flexGrow={1}
-                          sx={{ display: "flex", alignItems: "center" }}
-                        >
-                          <Typography
-                            variant="body1"
-                            fontWeight={admin.id === 1 ? "bold" : "normal"}
-                          >
+                        <Grid item sm={12} md={6} flexGrow={1} sx={{ display: "flex", alignItems: "center" }}>
+                          <Typography variant="body1" fontWeight={admin.id === 1 ? "bold" : "normal"}>
                             {admin.username}
                           </Typography>
                         </Grid>

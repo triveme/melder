@@ -6,7 +6,7 @@ import { MarkerPin } from "../../elements/marker-pin";
 import { Box } from "@mui/system";
 import redirectionSign from "../../assets/images/RedirectionSign.svg";
 
-export function ReportRoute({ report, selectedReport, handleMarkerClick, redirection }) {
+export function ReportRoute({ report, handleMarkerClick, redirection }) {
   let name = redirection ? "redirection" : "route";
 
   let lineLayer = redirection ? (
@@ -21,7 +21,8 @@ export function ReportRoute({ report, selectedReport, handleMarkerClick, redirec
       key={`${name}-no-${report.id}`}
       id={`${name}-${report.id}`}
       geojson={getGeoJSON(report.location)}
-      report={report}
+      element={report}
+      category="construction"
     />
   );
 
@@ -51,7 +52,7 @@ export function ReportRoute({ report, selectedReport, handleMarkerClick, redirec
       latitude={report.location[Math.floor(report.location.length / 2)].lat}
       anchor="bottom"
     >
-      <MarkerPin report={report} selectedReport={selectedReport} onClick={() => handleMarkerClick(report)} />
+      <MarkerPin element={report} onClick={() => handleMarkerClick(report)} category="construction" />
     </Marker>
   );
 

@@ -2,20 +2,23 @@ import { Stepper, Step, StepLabel, StepContent, Alert, Typography, Box, Button }
 
 import { DataStep } from "./data-step";
 import { LoadingAndCancelButtons } from "../../elements/loading-button";
-import { reporter } from "../../config/reporter";
+import { CONSTRUCTION_REPORTER } from "../../config/reporter";
 import { useStateContext } from "../../providers/state-provider";
 import { createReport, updateReport } from "../../clients/report-client";
 import { DualToggleButton } from "../../elements/dual-toggle-button";
 
+import { useQuery } from "../../providers/query-params-provider";
+import { useHistory } from "react-router-dom";
 export function CreateEditReport({
   validCoordinates,
   handleNext,
   handleReset,
-  handlePostReportSuccess,
   removedImages,
   setRemovedImages,
   center,
 }) {
+  const history = useHistory();
+  const query = useQuery();
   const { stateContext, setStateContext } = useStateContext();
   const {
     activeStep,
@@ -34,7 +37,6 @@ export function CreateEditReport({
   } = stateContext.reporter;
 
   const handlePostReportClick = () => {
-    // TODO: Send captcha to backend to verify requests
     const formData = new FormData();
     formData.append(`location`, JSON.stringify(userMarkerPosition));
     formData.append("category", categoryValue);
@@ -52,12 +54,10 @@ export function CreateEditReport({
       });
     }
     formData.append("redirection", JSON.stringify(newRedirection));
-    // console.log(formData);
     return createReport(stateContext.authToken, formData);
   };
 
   const handleUpdateReportClick = () => {
-    // TODO: Send captcha to backend to verify request
     const formData = new FormData();
     formData.append(`location`, JSON.stringify(userMarkerPosition));
     formData.append("category", categoryValue);
@@ -82,14 +82,80 @@ export function CreateEditReport({
     return updateReport(stateContext.authToken, stateContext.reporter.idIfEdit, formData);
   };
 
+  const handlePostReportSuccess = ({ data }) => {
+    // ensure report is shown by updating search params
+    const searchParams = new URLSearchParams(query);
+    searchParams.delete("report");
+    searchParams.append("report", data.id);
+
+    const categoryFilter = searchParams.getAll("kategorie");
+    if (!categoryFilter.includes(data.category.toLowerCase())) {
+      searchParams.append("kategorie", data.category.toLowerCase());
+    }
+
+    const statusFilter = searchParams.getAll("status");
+    let statusOfNewReport = "geplant";
+    const currentDate = new Date();
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+    if (currentDate > endDate) {
+      statusOfNewReport = "archiv";
+    } else if (currentDate > startDate && currentDate < endDate) {
+      statusOfNewReport = "aktiv";
+    }
+    if (!statusFilter.includes(statusOfNewReport)) {
+      searchParams.append("status", statusOfNewReport);
+    }
+
+    history.push({
+      pathname: "melder",
+      search: searchParams.toString(),
+    });
+
+    setStateContext((prevState) => {
+      return {
+        ...prevState,
+        queryTrigger: prevState.queryTrigger + 1,
+        reporter: {
+          ...CONSTRUCTION_REPORTER.default,
+        },
+      };
+    });
+  };
+
   const handleUpdateReportSuccess = ({ data }) => {
-    setStateContext({
-      ...stateContext,
-      queryTrigger: stateContext.queryTrigger + 1,
-      selectedReport: data?.id ? data.id : null,
-      reporter: {
-        ...reporter.default,
-      },
+    // ensure report is shown by updating search params
+    const searchParams = new URLSearchParams(query);
+    searchParams.delete("report");
+    searchParams.append("report", data.id);
+
+    const statusFilter = searchParams.getAll("status");
+    let statusOfNewReport = "geplant";
+    const currentDate = new Date();
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+    if (currentDate > endDate) {
+      statusOfNewReport = "archiv";
+    } else if (currentDate > startDate && currentDate < endDate) {
+      statusOfNewReport = "aktiv";
+    }
+    if (!statusFilter.includes(statusOfNewReport)) {
+      searchParams.append("status", statusOfNewReport);
+    }
+
+    history.push({
+      pathname: "melder",
+      search: searchParams.toString(),
+    });
+
+    setStateContext((prevState) => {
+      return {
+        ...prevState,
+        queryTrigger: prevState.queryTrigger + 1,
+        reporter: {
+          ...CONSTRUCTION_REPORTER.default,
+        },
+      };
     });
   };
 
@@ -99,20 +165,9 @@ export function CreateEditReport({
       reporter: {
         ...stateContext.reporter,
         activeStep: activeStep - 1,
-        captchaSolved: false,
       },
     });
   };
-
-  // const handleCaptchaSolve = (token, ekey) => {
-  //   setStateContext({
-  //     ...stateContext,
-  //     reporter: {
-  //       ...stateContext.reporter,
-  //       captchaSolved: token,
-  //     },
-  //   });
-  // };
 
   return (
     <Stepper
@@ -120,7 +175,7 @@ export function CreateEditReport({
       orientation="vertical"
       sx={{ width: "100%", paddingX: 1 }}
     >
-      {reporter.steps.map((step, index) =>
+      {CONSTRUCTION_REPORTER.steps.map((step, index) =>
         stateContext.reporter.idIfEdit && index === 0 ? null : (
           <Step
             key={step.label}
@@ -137,7 +192,7 @@ export function CreateEditReport({
                   <Typography component="div" variant="body2" sx={{ mb: 1 }}>
                     {step.descriptionMarker}
                   </Typography>
-                  <DualToggleButton options={reporter.steps[0].options} />
+                  <DualToggleButton options={CONSTRUCTION_REPORTER.steps[0].options} type="construction" />
                 </>
               ) : index === 1 ? (
                 <>
@@ -160,14 +215,14 @@ export function CreateEditReport({
                 </>
               ) : null}
               <Box sx={{ mb: 1.5 }}>
-                {index === reporter.steps.length - 1 ? (
+                {index === CONSTRUCTION_REPORTER.steps.length - 1 ? (
                   !stateContext.reporter.idIfEdit ? (
                     <LoadingAndCancelButtons
                       queryFun={handlePostReportClick}
                       cancelFun={handleBack}
                       queryCompleteFun={handlePostReportSuccess}
-                      queryText={reporter.send}
-                      cancelText={reporter.back}
+                      queryText={CONSTRUCTION_REPORTER.send}
+                      cancelText={CONSTRUCTION_REPORTER.back}
                       style={{ mt: 1, mr: 1 }}
                     />
                   ) : (
@@ -175,8 +230,8 @@ export function CreateEditReport({
                       queryFun={handleUpdateReportClick}
                       cancelFun={handleBack}
                       queryCompleteFun={handleUpdateReportSuccess}
-                      queryText={reporter.edit}
-                      cancelText={reporter.back}
+                      queryText={CONSTRUCTION_REPORTER.edit}
+                      cancelText={CONSTRUCTION_REPORTER.back}
                       style={{ mt: 1, mr: 1 }}
                     />
                   )
@@ -187,19 +242,17 @@ export function CreateEditReport({
                       disabled={
                         (index === 0 && !validCoordinates) ||
                         (index === 2 && (descriptionValue === "" || !startDateValue || !endDateValue || !title))
-                        // TODO: Reenable
-                        // || (index === 2 && !captchaSolved)
                       }
                       onClick={handleNext}
                       sx={{ mt: 1, mr: 1 }}
                     >
                       <Typography variant="button" component="div">
-                        {reporter.continue}
+                        {CONSTRUCTION_REPORTER.continue}
                       </Typography>
                     </Button>
                     <Button onClick={index === 0 ? handleReset : handleBack} sx={{ mt: 1, mr: 1 }} color="secondary">
                       <Typography variant="button" component="div" color="secondary">
-                        {index === 0 ? reporter.cancel : reporter.back}
+                        {index === 0 ? CONSTRUCTION_REPORTER.cancel : CONSTRUCTION_REPORTER.back}
                       </Typography>
                     </Button>
                   </>

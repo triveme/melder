@@ -12,8 +12,13 @@ import Typography from "@mui/material/Typography";
 import { useStateContext } from "../../providers/state-provider";
 
 import { deleteReport } from "../../clients/report-client";
+import { deleteClimateProject } from "../../clients/climate-project-client";
 
-export function DeleteDialog({ report }) {
+export function DeleteDialog({ element, category }) {
+  if (!element || !category) {
+    throw new Error("Element or category is undefined");
+  }
+
   const [open, setOpen] = useState(false);
 
   const handleClickOpen = () => {
@@ -35,7 +40,10 @@ export function DeleteDialog({ report }) {
   };
 
   const handleAdminDeleteClick = () => {
-    return deleteReport(stateContext.authToken, report.id);
+    if (category === "climate") {
+      return deleteClimateProject(stateContext.authToken, element.id);
+    }
+    return deleteReport(stateContext.authToken, element.id);
   };
 
   return (
@@ -53,8 +61,8 @@ export function DeleteDialog({ report }) {
           Löschen
         </Typography>
       </Button>
-      <Dialog open={open} onClose={handleClose} aria-labelledby="report-edit-title">
-        <DialogTitle id="report-edit-title">Meldung Löschen</DialogTitle>
+      <Dialog open={open} onClose={handleClose} aria-labelledby="element-edit-title">
+        <DialogTitle id="element-edit-title">Meldung Löschen</DialogTitle>
         <DialogContent>
           <Typography variant="body1">Soll diese Meldung wirklich permanent gelöscht werden?</Typography>
         </DialogContent>

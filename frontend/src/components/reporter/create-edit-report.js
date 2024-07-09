@@ -13,10 +13,8 @@ export function CreateEditReportWrapper({
   validCoordinates,
   handleNext,
   handlePositionReset,
-  handlePostReportSuccess,
   activeStep,
   reporter,
-  handlePostFinished,
   center,
   redirectionStep,
   handlePositionAccept,
@@ -42,13 +40,12 @@ export function CreateEditReportWrapper({
                     validCoordinates={validCoordinates}
                     handleNext={handleNext}
                     handleReset={handleReset}
-                    handlePostReportSuccess={handlePostReportSuccess}
                     removedImages={removedImages}
                     setRemovedImages={setRemovedImages}
                     center={center}
                   />
                 ) : (
-                  <ThankYouStep onPostFinished={handlePostFinished} />
+                  <ThankYouStep category="construction" />
                 )}
               </Stack>
             </Box>

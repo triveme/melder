@@ -18,11 +18,12 @@ import drawer from "../config/drawer";
 import useDesktop from "../providers/use-desktop";
 import { getDesignTokens } from "../theme/theme";
 import colors from "../theme/colors";
-import { reporter } from "../config/reporter";
+import { CONSTRUCTION_REPORTER } from "../config/reporter";
 
 import logoHuenfeld from "../assets/images/logos/logoHuenfeld.svg";
 import logoHuenfeldDark from "../assets/images/logos/logoHuenfeldDark.svg";
 import placeholderLogo from "../assets/images/logos/InfoPin_weiss.svg";
+import { hasPermission } from "../utils/permission-utils";
 
 export function ResponsiveDrawer({ mobileDrawerOpen, setMobileDrawerOpen }) {
   const { stateContext, setStateContext } = useStateContext();
@@ -39,7 +40,8 @@ export function ResponsiveDrawer({ mobileDrawerOpen, setMobileDrawerOpen }) {
       ...stateContext,
       authToken: null,
       adminId: null,
-      reporter: reporter.default,
+      adminPermissions: "none",
+      reporter: CONSTRUCTION_REPORTER.default,
     });
     console.log("logged out");
   };
@@ -61,13 +63,16 @@ export function ResponsiveDrawer({ mobileDrawerOpen, setMobileDrawerOpen }) {
 
         {drawer.content.map((item) => (
           <Box key={item.title + "-box"} sx={{ mt: 3 }}>
-            {item.authRequired === false || (item.authRequired === true && stateContext.authToken) ? (
+            {item.authRequired === false ||
+            (item.authRequired === true && stateContext.authToken) ||
+            (stateContext.authToken && hasPermission(stateContext.adminPermissions, item.authRequired)) ? (
               <MuiThemeProvider theme={darkTheme}>
                 <ListItem key={item.title + "-list-item"} disablePadding>
                   <ListItemButton
                     key={item.title + "-list-item-button"}
-                    component={Link}
-                    to={item.url}
+                    component={item.url.includes(process.env.REACT_APP_INFO_URL) ? "a" : Link}
+                    href={item.url.includes(process.env.REACT_APP_INFO_URL) ? item.url : undefined}
+                    to={!item.url.includes(process.env.REACT_APP_INFO_URL) ? item.url : undefined}
                     selected={item.url === location.pathname}
                   >
                     <ListItemIcon key={item.title + "-list-item-icon"}>
@@ -81,12 +86,7 @@ export function ResponsiveDrawer({ mobileDrawerOpen, setMobileDrawerOpen }) {
           </Box>
         ))}
         {stateContext.authToken ? (
-          <Box
-            color="inherit"
-            aria-label="logout"
-            // onClick={handleLogout}
-            sx={{ mt: 3 }}
-          >
+          <Box color="inherit" aria-label="logout" sx={{ mt: 3 }}>
             <MuiThemeProvider theme={darkTheme}>
               <ListItem key={"logout-list-item"} disablePadding>
                 <ListItemButton key={"logout-list-item-button"} onClick={handleLogout}>
@@ -125,7 +125,7 @@ export function ResponsiveDrawer({ mobileDrawerOpen, setMobileDrawerOpen }) {
           />
         </Link>
       </Box>
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", pb: 1 }}> 
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", pb: 1 }}>
         <Link
           to="/impressum"
           style={{
@@ -138,7 +138,7 @@ export function ResponsiveDrawer({ mobileDrawerOpen, setMobileDrawerOpen }) {
           </Box>
         </Link>
         <Link
-          to="//www.huenfeld.de/datenschutz-huenfeld.html"
+          to={{ pathname: `${process.env.REACT_APP_PRIVACY_URL}` }}
           target="_blank"
           style={{
             color: colors.white,

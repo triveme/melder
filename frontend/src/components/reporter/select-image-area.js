@@ -4,42 +4,65 @@ import { IconButton } from "@mui/material";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 
 import { useStateContext } from "../../providers/state-provider";
-import { reporter } from "../../config/reporter";
-import { ImagePreview } from "./image-preview";
-import { checkSizeAndType } from "../../utils/image-utils";
+import { CONSTRUCTION_REPORTER, CLIMATE_REPORTER } from "../../config/reporter";
+import { ImagePreview, resizeFile } from "./image-preview";
 
-export function SelectImageArea({ report, removedImages, setRemovedImages }) {
+export function SelectImageArea({ element, removedImages, setRemovedImages, type }) {
+  if (!type) {
+    throw new Error("SelectImageArea: type is undefined");
+  }
+
   const { stateContext, setStateContext } = useStateContext();
-  const { images } = stateContext.reporter;
-  const step = reporter.steps[2];
+  const { images } = type === "construction" ? stateContext.reporter : stateContext.climateReporter;
+  const step = type === "construction" ? CONSTRUCTION_REPORTER.steps[2] : CLIMATE_REPORTER.steps[2];
   let imageCount = 0;
 
   if (images && images.length > 0) {
     imageCount += images.length;
   }
 
-  if (stateContext.reporter.idIfEdit && report && report.imgPath && report.imgPath.length > 0) {
-    imageCount += report.imgPath.length;
+  if (type === "construction") {
+    if (stateContext.reporter.idIfEdit && element && element.imgPath && element.imgPath.length > 0) {
+      imageCount += element.imgPath.length;
+    }
+  } else if (type === "climate") {
+    if (stateContext.climateReporter.idIfEdit && element && element.imgPath && element.imgPath.length > 0) {
+      imageCount += element.imgPath.length;
+    }
   }
 
   if (removedImages.length > 0) {
     imageCount -= removedImages.length;
   }
 
-  const handleAddImages = (event) => {
+  const handleAddImages = async (event) => {
     if (!event.target.files || !event.target.files.length > 0) return;
 
     let filesToAdd = [];
-    const maxSize = event.target.files.length > 3 ? 3 : event.target.files.length;
-    filesToAdd = checkSizeAndType(event.target.files, maxSize);
 
-    setStateContext({
-      ...stateContext,
-      reporter: {
-        ...stateContext.reporter,
-        images: filesToAdd,
-      },
-    });
+    try {
+      filesToAdd = await Promise.all([...event.target.files].map((file) => resizeFile(file)));
+    } catch (error) {
+      console.error(error);
+    }
+
+    if (type === "construction") {
+      setStateContext({
+        ...stateContext,
+        reporter: {
+          ...stateContext.reporter,
+          images: filesToAdd,
+        },
+      });
+    } else if (type === "climate") {
+      setStateContext({
+        ...stateContext,
+        climateReporter: {
+          ...stateContext.climateReporter,
+          images: filesToAdd,
+        },
+      });
+    }
   };
 
   return (
@@ -65,8 +88,13 @@ export function SelectImageArea({ report, removedImages, setRemovedImages }) {
         )}
       </Stack>
       <ImagePreview
-        report={report}
-        edit={stateContext.reporter.idIfEdit && report}
+        element={element}
+        type={type}
+        edit={
+          element &&
+          ((type === "construction" && stateContext.reporter.idIfEdit) ||
+            (type === "climate" && stateContext.climateReporter.idIfEdit))
+        }
         imageCount={imageCount}
         removedImages={removedImages}
         setRemovedImages={setRemovedImages}

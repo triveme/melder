@@ -2,20 +2,24 @@ import { Button } from "@mui/material";
 import { Typography } from "@mui/material";
 
 import { deficiencyReporter } from "../../config/deficiency-reporter";
-import { checkSizeAndType } from "../../utils/image-utils";
 import { useDeficiencyContext } from "../../providers/deficiency-provider";
 import { DeficiencyImagePreview } from "./deficiency-image-preview";
+import { resizeFile } from "../reporter/image-preview";
 
 export function DeficiencySelectImageArea() {
   const { deficiencyContext, setDeficiencyContext } = useDeficiencyContext();
   const { images } = deficiencyContext;
 
-  const handleAddImages = (event) => {
+  const handleAddImages = async (event) => {
     if (!event.target.files || !event.target.files.length > 0) return;
 
     let filesToAdd = [];
-    const maxSize = event.target.files.length > 3 ? 3 : event.target.files.length;
-    filesToAdd = checkSizeAndType(event.target.files, maxSize);
+
+    try {
+      filesToAdd = await Promise.all([...event.target.files].map((file) => resizeFile(file)));
+    } catch (error) {
+      console.error(error);
+    }
 
     setDeficiencyContext({
       ...deficiencyContext,

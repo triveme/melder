@@ -54,9 +54,9 @@ export function AdminCard({ report, admins, handleChangeLocation, handleTriggerC
         newRedirection: report.redirection.length > 1 ? report.redirection : [],
         hasRedirection: report.redirection.length > 1 ? true : false,
         title: report.title,
-        link: report.link,
-        contactPerson: report.contactPerson,
-        constructionCosts: report.constructionCosts,
+        link: report.link ? report.link : "",
+        contactPerson: report.contactPerson ? report.contactPerson : "",
+        constructionCosts: report.constructionCosts ? report.constructionCosts : "",
       },
     });
   };
@@ -132,10 +132,10 @@ export function AdminCard({ report, admins, handleChangeLocation, handleTriggerC
           >
             {lastChanger
               ? "Zuletzt geändert von: " + lastChanger.username
-              : "Diese Meldung wurde von keinem der existierenden Admins bearbeitet"}
+              : "Diese Meldung wurde von keinem der existierenden Nutzer bearbeitet"}
           </Typography>
           <TextField
-            label="Statusnachricht (für Admins)"
+            label="Statusnachricht (für berechtigte Nutzer)"
             fullWidth
             sx={{ mt: 2, mb: 1 }}
             multiline
@@ -198,7 +198,7 @@ export function AdminCard({ report, admins, handleChangeLocation, handleTriggerC
         </Button>
       </Box>
       <Box sx={{ m: 1 }}>
-        <DeleteDialog report={report} />
+        <DeleteDialog element={report} category="construction" />
       </Box>
     </>
   );

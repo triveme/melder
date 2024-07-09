@@ -8,7 +8,7 @@ import Snackbar from "@mui/material/Snackbar";
 import { Alert } from "@mui/material";
 
 import { Icon } from "../icon";
-import { reporter } from "../../config/reporter";
+import { CONSTRUCTION_REPORTER } from "../../config/reporter";
 import useWindowDimensions from "../../providers/window-dimensions-provider";
 import { useStateContext } from "../../providers/state-provider";
 
@@ -28,8 +28,8 @@ export function PositionOverlay({ validCoordinates, handleAccept, handlePosition
         onClose={handleClose}
         message={
           stateContext.reporter.locationOption === "Standort"
-            ? reporter.steps[1].descriptionMarker
-            : reporter.steps[1].descriptionMarkers
+            ? CONSTRUCTION_REPORTER.steps[1].descriptionMarker
+            : CONSTRUCTION_REPORTER.steps[1].descriptionMarkers
         }
         autoHideDuration={4000}
         key={"Snackbar-key"}
@@ -43,7 +43,7 @@ export function PositionOverlay({ validCoordinates, handleAccept, handlePosition
         sx={{ mt: 10, position: "absolute" }}
       >
         <Alert variant="filled" severity="warning">
-          {reporter.steps[1].alertText}
+          {CONSTRUCTION_REPORTER.steps[1].alertText}
         </Alert>
       </Snackbar>
       <Grow in={true}>

@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import MapGL, { NavigationControl } from "react-map-gl";
 
 import { useHistory } from "react-router-dom";
-import { useGeoCoder } from "../clients/geocoder-client";
+import { useQuery } from "../providers/query-params-provider";
 
 import map from "../config/map";
 import { selectableArea } from "../data/SelectableArea";
@@ -18,44 +18,40 @@ import { useDeficiencyContext } from "../providers/deficiency-provider";
 export function Map({ children, editLocation, setCenter, satellite, triggerCenterMap }) {
   const { colorMode } = useColorModeContext();
   const { stateContext, setStateContext } = useStateContext();
-  const { address, triggerAddressSearch } = stateContext;
+  const { previousPathname } = stateContext;
   const { deficiencyContext } = useDeficiencyContext();
   const { location, triggerCenter } = deficiencyContext;
   const mapRef = useRef();
   const history = useHistory();
-  const geoCoder = useGeoCoder(address);
-
-  const [viewState, setViewState] = useState({
-    latitude: map.center.lat,
-    longitude: map.center.lng,
-    zoom: map.zoom,
-  });
+  const query = useQuery();
 
   // recenter if new coordinates from search
   useEffect(() => {
-    if (
-      geoCoder.data &&
-      geoCoder.data.length > 1 &&
-      coordinatesInsidePolygon({ lng: geoCoder.data[0], lat: geoCoder.data[1] }, selectableArea)
-    ) {
-      setViewState({
-        longitude: geoCoder.data[0],
-        latitude: geoCoder.data[1],
-        zoom: 15.95,
-      });
-      setCenter({ lng: geoCoder.data[0], lat: geoCoder.data[1] });
+    if (location && coordinatesInsidePolygon({ lng: location.longitude, lat: location.latitude }, selectableArea)) {
+      setStateContext((prevState) => ({
+        ...prevState,
+        mapViewState: {
+          longitude: location.longitude,
+          latitude: location.latitude,
+          zoom: 15.95,
+        },
+      }));
+      setCenter({ lng: location.longitude, lat: location.latitude });
     }
     // eslint-disable-next-line
-  }, [geoCoder.data, triggerAddressSearch]);
+  }, [location?.longitude, location?.latitude]);
 
   /** center map on pin, when admin wants to edit report */
   useEffect(() => {
     if (editLocation && editLocation.lat && editLocation.lng) {
-      setViewState({
-        longitude: editLocation.lng,
-        latitude: editLocation.lat,
-        zoom: 16.95,
-      });
+      setStateContext((prevState) => ({
+        ...prevState,
+        mapViewState: {
+          longitude: editLocation.lng,
+          latitude: editLocation.lat,
+          zoom: 16.95,
+        },
+      }));
       setCenter({ lng: editLocation.lng, lat: editLocation.lat });
     }
     // eslint-disable-next-line
@@ -64,11 +60,14 @@ export function Map({ children, editLocation, setCenter, satellite, triggerCente
   /** center map on pin when getting user location (creating-deficiency) */
   useEffect(() => {
     if (location && location.lat && location.lng) {
-      setViewState({
-        longitude: location.lng,
-        latitude: location.lat,
-        zoom: 14.95,
-      });
+      setStateContext((prevState) => ({
+        ...prevState,
+        mapViewState: {
+          longitude: location.lng,
+          latitude: location.lat,
+          zoom: 14.95,
+        },
+      }));
       setCenter({ lng: location.lng, lat: location.lat });
     }
     // eslint-disable-next-line
@@ -76,12 +75,12 @@ export function Map({ children, editLocation, setCenter, satellite, triggerCente
 
   const handleMapClick = (e) => {
     if (e.originalEvent?.target?.className === "mapboxgl-canvas") {
-      // setStateContext({
-      //   ...stateContext,
-      //   selectedReport: null,
-      // });
+      const searchParams = new URLSearchParams(query);
+      searchParams.delete("report");
+      searchParams.delete("klima-projekt");
       history.push({
-        search: ``,
+        pathname: previousPathname,
+        search: searchParams.toString(),
       });
     }
 
@@ -109,6 +108,10 @@ export function Map({ children, editLocation, setCenter, satellite, triggerCente
   const handleMoveEnd = () => {
     if (mapRef.current) {
       setCenter(mapRef.current.getCenter());
+      setStateContext((prevState) => ({
+        ...prevState,
+        mapBounds: mapRef.current ? mapRef.current.getMap().getBounds().toArray().flat() : null,
+      }));
     }
   };
 
@@ -142,27 +145,9 @@ export function Map({ children, editLocation, setCenter, satellite, triggerCente
     // eslint-disable-next-line
   }, [stateContext.reporter.newRedirection, stateContext.reporter.newRedirection.length]);
 
-  // // flies to marker location on click
-  // const flyToTarget = stateContext.flyToTarget;
-  // if (flyToTarget) {
-  //   if (mapRef.current) {
-  //     mapRef.current.easeTo({
-  //       center: flyToTarget.center,
-  //       zoom: flyToTarget.zoom,
-  //     });
-
-  //     mapRef.current.on("moveend", () => {
-  //       setStateContext({
-  //         ...stateContext,
-  //         flyToTarget: null,
-  //       });
-  //     });
-  //   }
-  // }
-
   return (
     <MapGL
-      {...viewState}
+      {...stateContext.mapViewState}
       // reuseMaps={true}
       maxBounds={map.outerBounds}
       minZoom={map.zoom}
@@ -175,7 +160,13 @@ export function Map({ children, editLocation, setCenter, satellite, triggerCente
           ? "mapbox://styles/stadthuenfeld/cl6q70nhc000a14o5t9jeqerx"
           : "mapbox://styles/stadthuenfeld/cl6q6x0gh002u14n0bztjcm2d"
       }
-      onMove={(e) => setViewState(e.viewState)}
+      onLoad={(e) =>
+        setStateContext((prevState) => ({
+          ...prevState,
+          mapBounds: mapRef.current ? mapRef.current.getMap().getBounds().toArray().flat() : null,
+        }))
+      }
+      onMove={(e) => setStateContext((prevState) => ({ ...prevState, mapViewState: e.viewState }))}
       onMoveEnd={handleMoveEnd}
       onClick={handleMapClick}
       mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_ACCESS_TOKEN}
@@ -183,11 +174,10 @@ export function Map({ children, editLocation, setCenter, satellite, triggerCente
       <Area satellite={satellite} />
       <MunicipalBoundaries satellite={satellite} />
       <BoundariesHuenfeld satellite={satellite} />
-      <NavigationControl 
+      <NavigationControl
         showCompass={false}
         style={{
           position: "relative",
-          top: "22px"
         }}
       />
       {children}

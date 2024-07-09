@@ -9,7 +9,7 @@ import { useStateContext } from "../providers/state-provider";
 import { ResponsiveDrawer } from "./responsive-drawer";
 import { Icon } from "./icon";
 import placeholderLogo from "../assets/images/logos/InfoPin_weiss.svg";
-import { reporter } from "../config/reporter";
+import { CONSTRUCTION_REPORTER, CLIMATE_REPORTER } from "../config/reporter";
 import useDesktop from "../providers/use-desktop";
 
 export function MenuBar() {
@@ -23,7 +23,9 @@ export function MenuBar() {
       ...stateContext,
       authToken: null,
       adminId: null,
-      reporter: reporter.default,
+      adminPermissions: "none",
+      reporter: CONSTRUCTION_REPORTER.default,
+      climateReporter: CLIMATE_REPORTER.default,
     });
     console.log("logged out");
   };
@@ -41,18 +43,19 @@ export function MenuBar() {
               sx={{
                 mr: 1,
                 lineHeight: "normal",
-                display: { xs: "block", md: "none" },
+                display: "block",
                 cursor: "pointer",
               }}
             >
               <Icon icon="menu" />
             </Box>
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flexGrow: 1, mr: 1 }}>
-              {" "}
               <img
                 src={placeholderLogo}
                 style={{
+                  maxHeight: "3rem",
                   width: "120px",
+                  objectFit: "scale-down",
                 }}
                 sx={{ color: "white" }}
                 alt="Logo"

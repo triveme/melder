@@ -5,18 +5,29 @@ import { Grow } from "@mui/material";
 import { Chip } from "@mui/material";
 import { Typography } from "@mui/material";
 import { Icon } from "./icon";
-import { useState } from "react";
+import { useStateContext } from "../providers/state-provider";
 
-export function FilterGroup({ reportCardOpen, filterContent }) {
+export function FilterGroup({ reportCardOpen, filterContent, pathname }) {
+  if (!pathname) {
+    throw new Error("FilterGroup: pathname is required");
+  }
+
   const wideEnough = useMediaQuery("(min-width:1100px)");
   const wideEnoughWithCard = useMediaQuery("(min-width:1500px)");
   let filterCategory = "";
-  const [filterOpen, setFilterOpen] = useState(false);
+  const { stateContext, setStateContext } = useStateContext();
 
   let row = (wideEnough && !reportCardOpen) || (wideEnoughWithCard && reportCardOpen) ? true : false;
 
+  // As "klima" has many categories, we don't want to show them in a row
+  if (pathname === "klima") row = false;
+
   const handleClick = () => {
-    setFilterOpen(!filterOpen);
+    setStateContext((prevState) => ({
+      ...prevState,
+      openFilterGroup:
+        prevState.openFilterGroup === filterContent[0].filterCategoryName ? null : filterContent[0].filterCategoryName,
+    }));
   };
 
   if (filterContent.length > 0) {
@@ -28,7 +39,7 @@ export function FilterGroup({ reportCardOpen, filterContent }) {
 
     <Stack direction={"row"} spacing={0.5} alignItems={"center"} justifyContent={"center"} sx={{ pt: 1 }}>
       {filterContent.map((cat) => (
-        <FilterChip key={cat.name} category={cat} />
+        <FilterChip key={cat.name} category={cat} pathname={pathname} />
       ))}
     </Stack>
   ) : (
@@ -37,7 +48,7 @@ export function FilterGroup({ reportCardOpen, filterContent }) {
       spacing={1}
       alignItems="flex-start"
       justifyContent="flex-start"
-      sx={{ position: "relative" }}
+      sx={{ position: "relative", zIndex: 11 }}
     >
       <Grow in={true}>
         <Chip
@@ -51,15 +62,17 @@ export function FilterGroup({ reportCardOpen, filterContent }) {
               sx={{ display: "flex", alignItems: "center", fontSize: "12px", ml: 0.5 }}
             >
               {filterCategory}
-              <Icon
-                icon={filterOpen ? "arrowDown" : "arrowUp"}
-                props={{
-                  fontSize: "small",
-                  sx: {
-                    ml: 0.5,
-                  },
-                }}
-              />
+              {wideEnough ? (
+                <Icon
+                  icon={stateContext.openFilterGroup === filterContent[0].filterCategoryName ? "arrowDown" : "arrowUp"}
+                  props={{
+                    fontSize: "small",
+                    sx: {
+                      ml: 0.5,
+                    },
+                  }}
+                />
+              ) : null}
             </Typography>
           }
           color="default"
@@ -68,7 +81,7 @@ export function FilterGroup({ reportCardOpen, filterContent }) {
           }}
         />
       </Grow>
-      {filterOpen ? (
+      {stateContext.openFilterGroup === filterContent[0].filterCategoryName ? (
         <Stack
           direction={"column"}
           spacing={0.5}
@@ -77,7 +90,7 @@ export function FilterGroup({ reportCardOpen, filterContent }) {
           sx={{ pt: 1, pb: 5, position: "absolute" }}
         >
           {filterContent.map((cat) => (
-            <FilterChip key={cat.name} category={cat} />
+            <FilterChip key={cat.name} category={cat} pathname={pathname} />
           ))}
         </Stack>
       ) : null}

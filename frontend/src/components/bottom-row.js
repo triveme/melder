@@ -5,38 +5,38 @@ import Fab from "@mui/material/Fab";
 import Stack from "@mui/material/Stack";
 import Grow from "@mui/material/Grow";
 
-import { CATEGORIES } from "../constants";
+import { CONSTRUCTION_CATEGORIES } from "../constants";
 import { TIME_FRAMES } from "../constants";
 import { Icon } from "./icon";
 import { useStateContext } from "../providers/state-provider";
 import { useQuery } from "../providers/query-params-provider";
 import { FilterGroup } from "./filter-group";
+import { hasPermission } from "../utils/permission-utils";
 
 export function BottomRow({ handleNext }) {
-  let query = useQuery();
-  const [reportCardOpen, setReportCardOpen] = useState(query.get("report") ? true : false);
+  const query = useQuery();
+  const reportId = query.get("report");
+  const [reportCardOpen, setReportCardOpen] = useState(reportId !== null ? true : false);
 
   const { stateContext } = useStateContext();
 
   useEffect(() => {
-    if (query.get("report")) {
-      // clear query if id doesn't exist
+    if (reportId !== null) {
       setReportCardOpen(true);
     } else {
       setReportCardOpen(false);
     }
-    // eslint-disable-next-line
-  }, [query.get("report")]);
+  }, [reportId]);
 
   return (
     /** Filter Chips  -------------------------------------------------------------------------------- */
     <Stack direction="column" spacing={0} alignItems="center">
       {/* Filter Chips nebeneinander */}
       <Stack direction="row" spacing={1.5} alignItems="center" sx={{ pt: 1 }}>
-        <FilterGroup reportCardOpen={reportCardOpen} filterContent={CATEGORIES} />
-        <FilterGroup reportCardOpen={reportCardOpen} filterContent={TIME_FRAMES} />
+        <FilterGroup reportCardOpen={reportCardOpen} filterContent={CONSTRUCTION_CATEGORIES} pathname="melder" />
+        <FilterGroup reportCardOpen={reportCardOpen} filterContent={TIME_FRAMES} pathname="melder" />
         {/* Add Button ---------------------------------------------------------------------- */}
-        {stateContext.authToken ? (
+        {stateContext.authToken && hasPermission(stateContext.adminPermissions, "melder_perm") ? (
           <Grow in={true}>
             <Fab
               color="primary"

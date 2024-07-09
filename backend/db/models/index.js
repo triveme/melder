@@ -21,4 +21,6 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 db.admin = require("./admin")(sequelize, Sequelize);
 db.report = require("./report")(sequelize, Sequelize);
+db.defect = require("./defect")(sequelize, Sequelize);
+db.climate_project = require("./climate_project")(sequelize, Sequelize);
 module.exports = db;

@@ -15,12 +15,13 @@ module.exports = (sequelize, DataTypes) => {
     {
       username: DataTypes.STRING,
       password: DataTypes.STRING,
+      permissions: DataTypes.STRING,
     },
     {
       sequelize,
       modelName: "Admin",
       tableName: "admins",
-    }
+    },
   );
   return Admin;
 };

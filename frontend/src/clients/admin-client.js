@@ -19,10 +19,11 @@ async function getAdmins(token) {
     });
 }
 
-export function useAdmins(token, queryTrigger) {
+export function useAdmins(token, queryTrigger, adminPermissions) {
   const queryResult = useQuery({
     queryKey: ["admins", token, queryTrigger],
     queryFn: () => getAdmins(token ? token : null),
+    enabled: !adminPermissions || adminPermissions === "" || adminPermissions.includes("admin_perm"),
   });
 
   return { ...queryResult, admins: queryResult.data };

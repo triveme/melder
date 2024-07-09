@@ -70,6 +70,7 @@ export function FullInfoCard({ report }) {
           <Link
             to={{ pathname: report.link }}
             target="_blank"
+            rel="noopener noreferrer"
             style={{
               fontSize: 16,
               textDecoration: "none",
@@ -152,7 +153,9 @@ export function FullInfoCard({ report }) {
             />
           </DialogContent>
           <DialogActions sx={{ display: "flex", justifyContent: "center" }}>
-            <Button onClick={handleImageDialogClose}>Schliessen</Button>
+            <Button onClick={handleImageDialogClose} sx={{ paddingBottom: 1 }}>
+              Schliessen
+            </Button>
           </DialogActions>
         </Dialog>
       ) : null}

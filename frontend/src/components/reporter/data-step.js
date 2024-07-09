@@ -13,15 +13,17 @@ import redirectionSign from "../../assets/images/RedirectionSign.svg";
 
 import { useStateContext } from "../../providers/state-provider";
 import { useReports } from "../../clients/report-client";
-import { reporter } from "../../config/reporter";
+import { CONSTRUCTION_REPORTER } from "../../config/reporter";
 import useDesktop from "../../providers/use-desktop";
 import { SelectImageArea } from "./select-image-area";
 import moment from "moment";
 import { Checkbox, FormControlLabel, FormGroup, Stack } from "@mui/material";
 import { IconButton } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { useQuery } from "../../providers/query-params-provider";
 
 export function DataStep({ removedImages, setRemovedImages, center }) {
+  const query = useQuery();
   const { stateContext, setStateContext } = useStateContext();
   const {
     categoryValue,
@@ -35,7 +37,7 @@ export function DataStep({ removedImages, setRemovedImages, center }) {
     link,
   } = stateContext.reporter;
 
-  const { reports } = useReports(stateContext.authToken, stateContext.queryTrigger);
+  const { reports } = useReports(stateContext.authToken, stateContext.queryTrigger, query);
 
   const report = reports?.find((r) => r.id === stateContext.reporter.idIfEdit);
 
@@ -47,7 +49,7 @@ export function DataStep({ removedImages, setRemovedImages, center }) {
 
   const [checked, setChecked] = useState(stateContext.reporter.hasRedirection);
 
-  const step = reporter.steps[2];
+  const step = CONSTRUCTION_REPORTER.steps[2];
 
   useEffect(() => {
     let countyNameOfCoord = getDistrictNameFromCoordinates(center);
@@ -218,11 +220,7 @@ export function DataStep({ removedImages, setRemovedImages, center }) {
           open={categorySelectOpen}
           onClose={handleCategorySelectClose}
         >
-          <MenuItem key={"category-" + step.categories.default} value={step.categories.default}>
-            {step.categories.default}
-          </MenuItem>
-          <Divider />
-          {step.categories.others.map((category) => (
+          {step.categories.map((category) => (
             <MenuItem key={"category-" + category} value={category}>
               {category}
             </MenuItem>
@@ -271,7 +269,7 @@ export function DataStep({ removedImages, setRemovedImages, center }) {
         <>
           <DesktopDatePicker
             required
-            label={reporter.steps[2].startDate}
+            label={CONSTRUCTION_REPORTER.steps[2].startDate}
             inputFormat="DD/MM/YYYY"
             value={startDateValue}
             onChange={handleStartDateChange}
@@ -280,7 +278,7 @@ export function DataStep({ removedImages, setRemovedImages, center }) {
           />
           <DesktopDatePicker
             required
-            label={reporter.steps[2].endDate}
+            label={CONSTRUCTION_REPORTER.steps[2].endDate}
             inputFormat="DD/MM/YYYY"
             value={endDateValue}
             onChange={handleEndDateChange}
@@ -292,7 +290,7 @@ export function DataStep({ removedImages, setRemovedImages, center }) {
         <>
           <MobileDatePicker
             required
-            label={reporter.steps[2].startDate}
+            label={CONSTRUCTION_REPORTER.steps[2].startDate}
             inputFormat="DD/MM/YYYY"
             value={startDateValue}
             onChange={handleStartDateChange}
@@ -301,7 +299,7 @@ export function DataStep({ removedImages, setRemovedImages, center }) {
           />
           <MobileDatePicker
             required
-            label={reporter.steps[2].endDate}
+            label={CONSTRUCTION_REPORTER.steps[2].endDate}
             inputFormat="DD/MM/YYYY"
             value={endDateValue}
             onChange={handleEndDateChange}
@@ -343,7 +341,12 @@ export function DataStep({ removedImages, setRemovedImages, center }) {
         inputProps={{ maxLength: 400 }}
         sx={{ mt: 1, mb: 1 }}
       />
-      <SelectImageArea report={report} removedImages={removedImages} setRemovedImages={setRemovedImages} />
+      <SelectImageArea
+        element={report}
+        removedImages={removedImages}
+        setRemovedImages={setRemovedImages}
+        type="construction"
+      />
       {stateContext.reporter.hasRedirection &&
       stateContext.reporter.newRedirection &&
       stateContext.reporter.newRedirection.length > 1 ? (
@@ -358,7 +361,7 @@ export function DataStep({ removedImages, setRemovedImages, center }) {
         <FormGroup>
           <FormControlLabel
             control={<Checkbox checked={checked} onChange={handleCheckboxChange} />}
-            label={reporter.steps[2].redirection}
+            label={CONSTRUCTION_REPORTER.steps[2].redirection}
           />
         </FormGroup>
       )}

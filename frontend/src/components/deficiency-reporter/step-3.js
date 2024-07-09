@@ -37,15 +37,13 @@ export function Step3({ step }) {
 
   const privacyLinkObject = (
     <>
-      <>
-        Ich habe die&nbsp;
-      </>
-      <a href='https://huenfeld.de/datenschutz-huenfeld.html' target={"_blank"} rel="noreferrer">Datenschutzerklärung</a>
-      <>
-        &nbsp;gelesen und verstanden.
-      </>
+      <>Ich habe die&nbsp;</>
+      <a href={`${process.env.REACT_APP_PRIVACY_URL}`} target={"_blank"} rel="noreferrer">
+        Datenschutzerklärung
+      </a>
+      <>&nbsp;gelesen und verstanden.</>
     </>
-  )
+  );
 
   return (
     <>
@@ -111,10 +109,10 @@ export function Step3({ step }) {
               sx={{
                 marginTop: -1,
               }}
-              style= {{ pointerEvents: "auto" }}
+              style={{ pointerEvents: "auto" }}
             />
           }
-          style= {{ pointerEvents: "auto" }}
+          style={{ pointerEvents: "auto" }}
           label={privacyLinkObject}
         />
       </FormGroup>

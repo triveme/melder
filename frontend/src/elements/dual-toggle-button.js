@@ -3,26 +3,39 @@ import { ToggleButton } from "@mui/material";
 import { Icon } from "../components/icon";
 import { useStateContext } from "../providers/state-provider";
 
-export function DualToggleButton({ options }) {
+export function DualToggleButton({ options, type }) {
+  if (!type) {
+    throw new Error("DualToggleButton: type is undefined");
+  }
+
   const { stateContext, setStateContext } = useStateContext();
-  const { reporter } = stateContext;
-  const { locationOption } = reporter;
+  const { reporter, climateReporter } = stateContext;
 
   const handleLocationOptionChange = (event, newLocationOption) => {
     if (newLocationOption !== null) {
-      setStateContext({
-        ...stateContext,
-        reporter: {
-          ...stateContext.reporter,
-          locationOption: newLocationOption,
-        },
-      });
+      if (type === "construction") {
+        setStateContext({
+          ...stateContext,
+          reporter: {
+            ...stateContext.reporter,
+            locationOption: newLocationOption,
+          },
+        });
+      } else if (type === "climate") {
+        setStateContext({
+          ...stateContext,
+          climateReporter: {
+            ...stateContext.climateReporter,
+            locationOption: newLocationOption,
+          },
+        });
+      }
     }
   };
 
   return (
     <ToggleButtonGroup
-      value={locationOption}
+      value={type === "construction" ? reporter.locationOption : climateReporter.locationOption}
       exclusive
       onChange={handleLocationOptionChange}
       aria-label="text alignment"

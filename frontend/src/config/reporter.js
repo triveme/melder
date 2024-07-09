@@ -1,15 +1,37 @@
-import { CATEGORY_NAMES } from "../constants";
+import { CATEGORY_NAMES, CLIMATE_PROTECTION_CATEGORY_NAMES, CLIMATE_ADJUSTMENT_CATEGORY_NAMES } from "../constants";
 
 export const categories = {
   all: "Alle",
   default: CATEGORY_NAMES.BUILDING,
+  others: [CATEGORY_NAMES.UNDERGROUND, CATEGORY_NAMES.OTHER],
+};
+
+export const climateProtectionCategories = {
+  all: "Alle",
+  default: CLIMATE_PROTECTION_CATEGORY_NAMES.GENERAL,
   others: [
-    CATEGORY_NAMES.UNDERGROUND,
-    CATEGORY_NAMES.OTHER
+    CLIMATE_PROTECTION_CATEGORY_NAMES.RENOVATION,
+    CLIMATE_PROTECTION_CATEGORY_NAMES.EFFICIENCY,
+    CLIMATE_PROTECTION_CATEGORY_NAMES.RENEWABLE_ENERGY,
+    CLIMATE_PROTECTION_CATEGORY_NAMES.CYCLE_FOOT_TRAFFIC,
+    CLIMATE_PROTECTION_CATEGORY_NAMES.E_MOBILITY,
   ],
 };
 
-export const reporter = {
+export const climateAdjustmentCategories = {
+  all: "Alle",
+  default: CLIMATE_ADJUSTMENT_CATEGORY_NAMES.GENERAL,
+  others: [
+    CLIMATE_ADJUSTMENT_CATEGORY_NAMES.PLANNING,
+    CLIMATE_ADJUSTMENT_CATEGORY_NAMES.INFRASTRUCTURE,
+    CLIMATE_ADJUSTMENT_CATEGORY_NAMES.GREEN,
+    CLIMATE_ADJUSTMENT_CATEGORY_NAMES.PROTECTION,
+    CLIMATE_ADJUSTMENT_CATEGORY_NAMES.FLOOD,
+    CLIMATE_ADJUSTMENT_CATEGORY_NAMES.RAIN,
+  ],
+};
+
+export const CONSTRUCTION_REPORTER = {
   steps: [
     {
       label: "Standort / Strecke",
@@ -34,10 +56,7 @@ export const reporter = {
       titlePlaceholder: "Meldungstitel",
       label: "Ereignis beschreiben",
       category: "Kategorie",
-      categories: {
-        default: categories.default,
-        others: categories.others,
-      },
+      categories: [categories.default, ...categories.others],
       counties: {
         default: "Hünfeld",
         others: [
@@ -78,7 +97,7 @@ export const reporter = {
     },
   ],
   finalStep: {
-    thanks: "Die Meldung wurde erfolgreich angelegt!",
+    thanks: "Danke. Die Meldung wurde erfolgreich angelegt!",
   },
   continue: "Weiter",
   back: "Zurück",
@@ -96,7 +115,6 @@ export const reporter = {
     startDateValue: null,
     endDateValue: null,
     userMarkerPosition: [],
-    captchaSolved: false,
     images: [],
     countyValue: "Hünfeld",
     lineCoordinates: [],
@@ -107,5 +125,108 @@ export const reporter = {
     link: "",
     contactPerson: "",
     constructionCosts: "",
+  },
+};
+
+export const CLIMATE_REPORTER = {
+  steps: [
+    {
+      label: "Information zum Standort / Gebiet",
+      descriptionMarkerLocation:
+        "Sie erstellen eine standortbezogene Meldung. Dementsprechend können Sie nachfolgend über die Karte den gewünschten Standort markieren. Wenn Sie stattdessen ein Gebiet beschreiben möchten, wählen Sie bitte oben die Option 'Standortübergreifend'.",
+      descriptionMarkerArea:
+        "Sie erstellen eine standortübergreifende Meldung. Dementsprechend können Sie nachfolgend das Gebiet angeben. Wenn Sie stattdessen einen Standort markieren möchten, wählen Sie bitte oben die Option 'Standortbezogen'.",
+    },
+    {
+      label: "Position wählen",
+      descriptionMarker: "Durch Verschieben der Karte können Sie die Position Ihres Projekts bestimmen.",
+      descriptionMarkers:
+        "Durch Klicken auf die Karte können Sie neue Marker der Strecke hinzufügen. Die Marker können per Drag & Drop angepasst werden.",
+      alertText: "Zu weit von Hünfeld entfernt",
+      area: "Gebietsbeschreibung",
+      areaPlaceholder: "Gebiet (z. B. 'Gesamter Stadtbereich')",
+      areaInfoText:
+        "Dieses Projekt wird nicht über einen Marker auf der Karte dargestellt. Stattdessen wird es in einer gesonderten Liste angezeigt, in der die Gebietsbeschreibung eingesehen werden kann.",
+    },
+    {
+      label: "Projekt beschreiben",
+      title: "Titel",
+      description: "Beschreibung (max. 2000 Zeichen)",
+      descriptionMaxChars: 2000,
+      titlePlaceholder: "Projekttitel",
+      category: "Kategorie",
+      categories: ["Klimaschutz", "Klimaanpassung"],
+      subCategory: "Unterkategorie",
+      subCategories: {
+        Klimaschutz: [climateProtectionCategories.default, ...climateProtectionCategories.others],
+        Klimaanpassung: [climateAdjustmentCategories.default, ...climateAdjustmentCategories.others],
+      },
+      timeHorizon: "Zeithorizont",
+      timeHorizons: ["Kurzfristig", "Mittelfristig", "Langfristig", "Archiv"],
+      costs: "Kosten",
+      responsible: "Zuständiger Fachbereich",
+      link: "Verlinkung",
+      county: "Stadtteil",
+      counties: {
+        default: "Hünfeld",
+        others: [
+          "Dammersbach",
+          "Großenbach",
+          "Kirchhasel",
+          "Mackenzell",
+          "Malges",
+          "Michelsrombach",
+          "Molzbach",
+          "Nüst",
+          "Oberfeld",
+          "Oberrombach",
+          "Roßbach",
+          "Rückers",
+          "Rudolphshan",
+          "Sargenzell",
+        ],
+      },
+      startDate: "Start",
+      endDate: "Ende",
+      pictureUpload: "Bild(er) hochladen (optional):",
+      pictureChange: "Bild(er) bearbeiten (optional):",
+      pictureRemove: "Bild löschen",
+    },
+    {
+      label: "Projektdaten absenden",
+      accept: "Durch einen Klick auf 'Senden' werden die Projektdaten gesendet.",
+      acceptEdit: "Durch einen Klick auf 'Bearbeiten' werden die Projektdaten unwiederruflich bearbeitet.",
+    },
+  ],
+  finalStep: {
+    thanks: "Danke. Das Projekt wurde erfolgreich angelegt!",
+  },
+  continue: "Weiter",
+  back: "Zurück",
+  cancel: "Abbrechen",
+  send: "Senden",
+  edit: "Bearbeiten",
+  close: "Schliessen",
+  default: {
+    idIfEdit: null,
+    activeStep: -1,
+    category: "Klimaschutz",
+    categoryDisplayName: "Allgemeines",
+    costsValue: "",
+    startDateValue: null,
+    endDateValue: null,
+    descriptionValue: "",
+    userMarkerPosition: [],
+    images: [],
+    lineCoordinates: [],
+    locationOption: "Standort",
+    locationTextValue: "",
+    newRedirection: [],
+    hasRedirection: false,
+    titleValue: "",
+    linkValue: "",
+    responsibleValue: "",
+    publicValue: false,
+    timeHorizonValue: "kurzfristig",
   },
 };

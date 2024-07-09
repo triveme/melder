@@ -1,19 +1,12 @@
 const { jwtAuth } = require("../middleware");
 const controller = require("../controllers/admin.controller");
-var express = require("express");
-var adminRouter = express.Router();
+const express = require("express");
+const adminRouter = express.Router();
 
-   adminRouter.get("/", [jwtAuth.verifyToken], controller.getAdmins)
-   .post("/", [jwtAuth.verifyToken], controller.postAdmin)
-   .put(
-    "/:adminId",
-    [jwtAuth.verifyToken],
-    controller.updateAdmin
-  )
-  .delete(
-    "/:adminId",
-    [jwtAuth.verifyToken],
-    controller.deleteAdmin
-  );
+adminRouter
+  .get("/", [jwtAuth.verifyTokenAndGetPermissionsHard], controller.getAdmins)
+  .post("/", [jwtAuth.verifyTokenAndGetPermissionsHard], controller.postAdmin)
+  .put("/:adminId", [jwtAuth.verifyTokenAndGetPermissionsHard], controller.updateAdmin)
+  .delete("/:adminId", [jwtAuth.verifyTokenAndGetPermissionsHard], controller.deleteAdmin);
 
-  module.exports = adminRouter;
+module.exports = adminRouter;
