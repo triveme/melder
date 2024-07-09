@@ -1,6 +1,6 @@
 import { Stepper, Step, StepLabel, StepContent, Typography, Box, Button } from "@mui/material";
 import { LoadingAndCancelButtons } from "../../elements/loading-button";
-import { reporter } from "../../config/reporter";
+import { CONSTRUCTION_REPORTER } from "../../config/reporter";
 import { deficiencyReporter } from "../../config/deficiency-reporter";
 import { useDeficiencyContext } from "../../providers/deficiency-provider";
 
@@ -14,10 +14,10 @@ const matchCategoryWithRecipient = (cat) => {
   for (let i = 0; i < MAENGEL_CATEGORIES.length; i++) {
     if (MAENGEL_CATEGORIES[i].name === cat) {
       return MAENGEL_CATEGORIES[i].recipient;
-    }    
+    }
   }
   return "other";
-}
+};
 
 export function CreateEditDeficiencySteps({ handleNext, handleReset, handlePostReportSuccess }) {
   const { deficiencyContext, setDeficiencyContext } = useDeficiencyContext();
@@ -39,13 +39,17 @@ export function CreateEditDeficiencySteps({ handleNext, handleReset, handlePostR
     // TODO: Send captcha to backend to verify requests
     const formData = new FormData();
     if (location && location.lng && location.lat) {
-      formData.append("lng", location.lng);
-      formData.append("lat", location.lat);
+      formData.append(`location`, JSON.stringify(location));
     } else {
-      formData.append("city", locationName);
-      formData.append("zip", zipCode);
-      formData.append("street", streetName);
-      formData.append("house_no", streetNumber);
+      formData.append(
+        `location`,
+        JSON.stringify({
+          city: locationName,
+          zip: zipCode,
+          street: streetName,
+          house_no: streetNumber,
+        }),
+      );
     }
     formData.append("category", category);
     formData.append("recipient", matchCategoryWithRecipient(category));
@@ -123,12 +127,12 @@ export function CreateEditDeficiencySteps({ handleNext, handleReset, handlePostR
                     sx={{ mt: 1, mr: 1 }}
                   >
                     <Typography variant="button" component="div">
-                      {reporter.continue}
+                      {CONSTRUCTION_REPORTER.continue}
                     </Typography>
                   </Button>
                   <Button onClick={index === 0 ? handleReset : handleBack} sx={{ mt: 1, mr: 1 }} color="secondary">
                     <Typography variant="button" component="div" color="secondary">
-                      {index === 0 ? reporter.cancel : reporter.back}
+                      {index === 0 ? CONSTRUCTION_REPORTER.cancel : CONSTRUCTION_REPORTER.back}
                     </Typography>
                   </Button>
                 </>

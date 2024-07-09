@@ -3,9 +3,19 @@ import { useQuery } from "react-query";
 import { client } from "../clients/client";
 
 export async function getReports(token, filter) {
+  const modifiedFilter = new URLSearchParams(filter);
+
+  if (modifiedFilter && modifiedFilter.has("kategorie")) {
+    const filterKategorie = modifiedFilter.getAll("kategorie");
+    modifiedFilter.delete("kategorie");
+    filterKategorie.forEach((element) => {
+      modifiedFilter.append("category", element.charAt(0).toUpperCase() + element.slice(1));
+    });
+  }
+
   return client
     .get("/reports", {
-      params: filter,
+      params: modifiedFilter,
       headers: token
         ? {
             "x-access-token": token,
@@ -20,8 +30,11 @@ export async function getReports(token, filter) {
 
 export function useReports(token, queryTrigger, filterParams) {
   const queryResult = useQuery({
-    queryKey: ["reports", token, queryTrigger, filterParams],
+    queryKey: ["reports", token, queryTrigger, filterParams?.toString()],
     queryFn: () => getReports(token ? token : null, filterParams),
+    keepPreviousData: true,
+    // Ensure requests are only sent after the filter is set
+    enabled: filterParams?.toString().length > 0,
   });
 
   return { ...queryResult, reports: queryResult.data };

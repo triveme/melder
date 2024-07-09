@@ -14,6 +14,7 @@ import { useColorModeContext } from "../providers/theme-provider";
 import colors from "../theme/colors";
 import { FullInfoCard } from "./report-card-components/full-info-card";
 import { AdminCard } from "./report-card-components/admin-card";
+import { hasPermission } from "../utils/permission-utils";
 
 export function ReportCard({ report, admins, handleMarkerPopupClose, handleChangeLocation, handleTriggerCenterMap }) {
   const { stateContext } = useStateContext();
@@ -25,7 +26,6 @@ export function ReportCard({ report, admins, handleMarkerPopupClose, handleChang
         p: 2,
         overflowY: "scroll",
         height: "100%",
-        backgroundColor: colorMode === "dark" ? colors.drawerDark : colors.backgroundLight,
       }}
     >
       <Stack
@@ -35,10 +35,9 @@ export function ReportCard({ report, admins, handleMarkerPopupClose, handleChang
           height: "100%",
           borderRadius: "10px",
           p: "20px",
-          backgroundColor: colorMode === "dark" ? colors.paperDark : colors.drawerLight,
         }}
       >
-        {stateContext.authToken ? (
+        {stateContext.authToken && hasPermission(stateContext.adminPermissions, "melder_perm") ? (
           <AdminCard
             admins={admins}
             handleChangeLocation={handleChangeLocation}
@@ -57,7 +56,7 @@ export function ReportCard({ report, admins, handleMarkerPopupClose, handleChang
           }}
         >
           <Button onClick={handleMarkerPopupClose} color="secondary">
-            <Typography variant="button" component="div" color="primary">
+            <Typography variant="button" component="div" color="primary" sx={{ paddingBottom: 1 }}>
               Schliessen
             </Typography>
           </Button>

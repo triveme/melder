@@ -47,6 +47,7 @@ export function LoginPage() {
       ...stateContext,
       authToken: res.data.accessToken,
       adminId: jwt_decode(res.data.accessToken).id,
+      adminPermissions: jwt_decode(res.data.accessToken).permissions,
     });
     console.log("Logged in as admin");
     history.replace("/");
@@ -201,7 +202,7 @@ export function LoginPage() {
               </Grid>
               <Grid item xs={12} md={3} margin={0}>
                 <Link
-                  to="//www.huenfeld.de/datenschutz-huenfeld.html"
+                  to={{ pathname: `${process.env.REACT_APP_PRIVACY_URL}` }}
                   target="_blank"
                   style={{
                     color: colors.white,

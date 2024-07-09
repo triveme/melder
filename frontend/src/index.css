@@ -11,3 +11,15 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.cluster-marker {
+  color: white;
+  background: #57839b;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: medium;
+  padding: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

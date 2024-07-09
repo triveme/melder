@@ -1,14 +1,18 @@
-const jwt = require("jsonwebtoken");
 const db = require("../db/models");
 const Report = db.report;
+const Defect = db.defect;
+const { ensurePermission } = require("../utils/ensure-permission");
 
 const fs = require("fs");
+const crypto = require("crypto");
 const { promisify } = require("util");
 const { Op } = require("sequelize");
 const { sendMail } = require("../services/mail.service");
 const unlinkAsync = promisify(fs.unlink);
 const axios = require("axios");
 const { v4: uuidv4 } = require("uuid");
+
+const algorithm = "aes-256-cbc";
 
 const counties = [
   "Dammersbach",
@@ -28,37 +32,30 @@ const counties = [
   "Sargenzell",
 ];
 
-getIsAdmin = (req, res) => {
-  let token = req.headers["x-access-token"];
-  if (!token || token === "undefined") {
-    return false;
+exports.getReports = async (req, res) => {
+  let isBackOfficeRequest = false;
+  if (Object.values(req.query).includes("all")) {
+    isBackOfficeRequest = true;
   }
 
-  jwt.verify(token, process.env.SECRET, (err, decoded) => {
-    if (err) {
-      return false;
-    }
-  });
+  if ((!req.query.status || !req.query.category) && !isBackOfficeRequest) {
+    console.log("Incoming request has too few query params to get reports.");
+    res.status(200).send([]);
+    return;
+  }
 
-  return true;
-};
+  let queryParams = createQueryParams(req);
 
-exports.getReports = async (req, res) => {
-  var queryParams = createQueryParams(req);
+  const isReportAdmin = req.permissions === "all" || req.permissions.includes("melder_perm");
 
-  const isAdmin = getIsAdmin(req, res);
-  // get all report data
-  console.log(isAdmin);
-  if (isAdmin) {
+  if (isReportAdmin) {
     Report.findAll(queryParams)
       .then((reportData) => {
         res.status(200).send(reportData);
       })
       .catch((err) => {
         res.status(500).send({
-          message:
-            err.message ||
-            "Beim Abrufen der Meldungen ist ein Fehler aufgetreten",
+          message: err.message || "Beim Abrufen der Meldungen ist ein Fehler aufgetreten",
         });
       });
     return;
@@ -82,24 +79,28 @@ exports.getReports = async (req, res) => {
     "constructionCosts",
     "contactPerson",
   ];
+
   if (queryParams.where == undefined) {
     queryParams.where = {};
   }
   queryParams.where.status = "active";
+
   Report.findAll(queryParams)
     .then((reportDataActive) => {
       res.status(200).send(reportDataActive);
     })
     .catch((err) => {
       res.status(500).send({
-        message:
-          err.message ||
-          "Beim Abrufen der aktiven, öffentlichen Meldungen ist ein Fehler aufgetreten",
+        message: err.message || "Beim Abrufen der aktiven, öffentlichen Meldungen ist ein Fehler aufgetreten",
       });
     });
 };
 
 exports.postReport = async (req, res) => {
+  if (!ensurePermission(req, res, "melder_perm")) {
+    return; // Return early if permissions are not sufficient
+  }
+
   if (
     !req.body.location ||
     !req.body.category ||
@@ -142,9 +143,7 @@ exports.postReport = async (req, res) => {
     title: req.body.title,
     link: req.body.link ? req.body.link : "",
     contactPerson: req.body.contactPerson ? req.body.contactPerson : "",
-    constructionCosts: req.body.constructionCosts
-      ? req.body.constructionCosts
-      : "",
+    constructionCosts: req.body.constructionCosts ? req.body.constructionCosts : "",
   };
   Report.create(report)
     .then((data) => {
@@ -152,14 +151,16 @@ exports.postReport = async (req, res) => {
     })
     .catch((err) => {
       res.status(500).send({
-        message:
-          err.message ||
-          "Während der Erzeugung der Meldung ist ein Datenbankfehler aufgetreten",
+        message: err.message || "Während der Erzeugung der Meldung ist ein Datenbankfehler aufgetreten",
       });
     });
 };
 
 exports.updateReport = async (req, res) => {
+  if (!ensurePermission(req, res, "melder_perm")) {
+    return; // Return early if permissions are not sufficient
+  }
+
   if (!req.params.reportId) {
     res.status(400).send({
       message: "Fehlende reportId",
@@ -176,13 +177,6 @@ exports.updateReport = async (req, res) => {
   }
 
   let updateFields = req.body;
-
-  // if (req.file){
-  //   updateFields = {...updateFields, imgPath:
-  //     req.file && req.file.filename
-  //       ? process.env.IMAGE_DIR + "/" + req.file.filename
-  //       : "",}
-  // }
 
   //decode image paths
   let removedImages = [];
@@ -259,14 +253,16 @@ exports.updateReport = async (req, res) => {
     })
     .catch((err) => {
       res.status(400).send({
-        message:
-          err.message ||
-          "Inkorrekte Meldungsdaten, die Aktualisierung funktioniert nicht",
+        message: err.message || "Inkorrekte Meldungsdaten, die Aktualisierung funktioniert nicht",
       });
     });
 };
 
 exports.deleteReport = async (req, res) => {
+  if (!ensurePermission(req, res, "melder_perm")) {
+    return; // Return early if permissions are not sufficient
+  }
+
   if (!req.params.reportId) {
     res.status(400).send({
       message: "Fehlende reportId",
@@ -303,30 +299,127 @@ exports.deleteReport = async (req, res) => {
     })
     .catch((err) => {
       res.status(400).send({
-        message:
-          err.message ||
-          "Während des Löschens der Meldung ist ein Datenbankfehler aufgetreten",
+        message: err.message || "Während des Löschens der Meldung ist ein Datenbankfehler aufgetreten",
       });
     });
 };
 
-exports.reportDefect = async (req, res) => {
-  const mailResponse = await sendMail(req.body, req.files).catch((err) => err);
-
-  if (mailResponse instanceof Error) {
-    res.status(500).send({ message: mailResponse.message });
-  } else {
-    res.status(200).send(mailResponse);
+exports.getAmountOfDefects = async (req, res) => {
+  if (!ensurePermission(req, res, "maengel_perm")) {
+    return; // Return early if permissions are not sufficient
   }
+
+  Defect.count()
+    .then((count) => {
+      res.status(200).send({ count: count });
+    })
+    .catch((err) => {
+      res.status(500).send({
+        message: err.message || "Beim Abrufen der Mängel ist ein Fehler aufgetreten",
+      });
+    });
+  return;
+};
+
+exports.getDefects = async (req, res) => {
+  if (!ensurePermission(req, res, "maengel_perm")) {
+    return; // Return early if permissions are not sufficient
+  }
+
+  Defect.findAll({ raw: true, limit: 10, offset: parseInt(req.query.offset) || 0 })
+    .then((defectData) => {
+      defectData = defectData.map((defect) => {
+        if (defect.mail) {
+          try {
+            const decipher = crypto.createDecipher(algorithm, process.env.SECRET);
+            const mail = decipher.update(defect.mail, "hex", "utf-8") + decipher.final("utf8");
+            defect.mail = mail;
+          } catch (error) {
+            console.log("Can't decrypt mail. Returning encrypted mail.");
+          }
+        }
+        if (defect.phone) {
+          try {
+            const decipher = crypto.createDecipher(algorithm, process.env.SECRET);
+            const phone = decipher.update(defect.phone, "hex", "utf-8") + decipher.final("utf8");
+            defect.phone = phone;
+          } catch (error) {
+            console.log("Can't dectrypt phone. Returning encrypted phone.");
+          }
+        }
+        return defect;
+      });
+      res.status(200).send(defectData);
+    })
+    .catch((err) => {
+      res.status(500).send({
+        message: err.message || "Beim Abrufen der Mängel ist ein Fehler aufgetreten",
+      });
+    });
+  return;
+};
+
+exports.reportDefect = async (req, res) => {
+  console.log("Reporting Defect");
+  if (!req.body.email || !req.body.category || !req.body.description || !req.body.location) {
+    res.status(400).send({ message: "Invalid request body" });
+    return;
+  }
+
+  let imagePaths = [];
+
+  if (req.files && req.files.length > 0) {
+    req.files.forEach((image) => {
+      if (image.filename) {
+        console.log("Adding image: ", image.filename);
+        imagePaths.push(process.env.IMAGE_DIR + "/" + image.filename);
+      }
+    });
+  }
+
+  const cipher1 = crypto.createCipher(algorithm, process.env.SECRET);
+  const cipher2 = crypto.createCipher(algorithm, process.env.SECRET);
+
+  const defect = {
+    location: JSON.parse(req.body.location),
+    category: req.body.category,
+    description: req.body.description,
+    mail: cipher1.update(req.body.email || "", "utf-8", "hex") + cipher1.final("hex"),
+    phone: cipher2.update(req.body.phone_no || "", "utf-8", "hex") + cipher2.final("hex"),
+    imgPath: imagePaths,
+  };
+
+  Defect.create(defect)
+    .then(async (defectData) => {
+      const mailResponse = await sendMail(req.body, req.files).catch((err) => err);
+
+      if (mailResponse instanceof Error) {
+        console.log("500 error sending mail");
+        console.log(mailResponse.message);
+        res.status(500).send({ message: mailResponse.message });
+      } else {
+        console.log("201 success sending mail");
+        console.log(defectData);
+        res.status(201).send(defectData);
+      }
+    })
+    .catch((err) => {
+      console.error("Error during Defect Creation");
+      console.error(err);
+      res.status(500).send({
+        message: err.message || "Während der Erzeugung der Meldung ist ein Datenbankfehler aufgetreten",
+      });
+    });
 };
 
 exports.reportDefectExternal = async (req, res) => {
-  if (
-    req.body.meldung != undefined &&
-    req.body.meldung.sachdaten != undefined
-  ) {
-    defect = req.body.meldung.sachdaten;
-    defectImage = req.body.meldung.anhaenge;
+  if (!ensurePermission(req, res, "maengel_perm")) {
+    return; // Return early if permissions are not sufficient
+  }
+
+  if (req.body.meldung != undefined && req.body.meldung.sachdaten != undefined) {
+    let defect = req.body.meldung.sachdaten;
+    let defectImage = req.body.meldung.anhaenge;
 
     var location = [];
     var imagePaths = [];
@@ -337,10 +430,7 @@ exports.reportDefectExternal = async (req, res) => {
 
     if (defect.geom != undefined && defect.geom != "") {
       var geomPrefix = "POINT(";
-      var geom = defect.geom.substring(
-        geomPrefix.length,
-        defect.geom.length - 2
-      );
+      var geom = defect.geom.substring(geomPrefix.length, defect.geom.length - 2);
       var geomArray = geom.split(" ");
 
       location.push({
@@ -361,9 +451,7 @@ exports.reportDefectExternal = async (req, res) => {
 
       defectImage.anhang.forEach((image) => {
         var img = image.$;
-        var filePath = `${fileBasePath}/${uuidv4()}-starkregenmelder.${img.mime_typ.substring(
-          6
-        )}`;
+        var filePath = `${fileBasePath}/${uuidv4()}-infopin.${img.mime_typ.substring(6)}`;
 
         const binaryData = Buffer.from(img.base64_inhalt, "base64");
         fs.writeFile(filePath, binaryData, (error) => {
@@ -391,15 +479,14 @@ exports.reportDefectExternal = async (req, res) => {
           : "",
       guid: defect.guid,
     };
+
     Report.create(report)
       .then((data) => {
         res.status(201).send(data);
       })
       .catch((err) => {
         res.status(500).send({
-          message:
-            err.message ||
-            "Während der Erzeugung der Meldung ist ein Datenbankfehler aufgetreten",
+          message: err.message || "Während der Erzeugung der Meldung ist ein Datenbankfehler aufgetreten",
         });
       });
     return;
@@ -431,35 +518,46 @@ async function createAddressForExternalDataset(coordinates) {
 
 function createQueryParams(req) {
   queryParams = {};
-  var dateQuery = {
-    endDate: {
-      [Op.or]: [{ [Op.gte]: new Date() }, { [Op.eq]: null }],
-    },
-  };
-  if (req.query.state) {
-    if (req.query.state === "archived") {
-      dateQuery.startDate = { [Op.lt]: new Date() };
-      dateQuery.endDate = { [Op.lt]: new Date() };
-    } else if (req.query.state === "active") {
-      dateQuery.startDate = { [Op.lte]: new Date() };
-      dateQuery.endDate = { [Op.gte]: new Date() };
-    } else if (req.query.state === "planned") {
-      dateQuery.startDate = { [Op.gt]: new Date() };
-      dateQuery.endDate = { [Op.gt]: new Date() };
-    } else if (req.query.state === "all") {
-      dateQuery.startDate = {
-        [Op.or]: [{ [Op.gte]: new Date() }, { [Op.lte]: new Date() }],
-      };
-      dateQuery.endDate = {
-        [Op.or]: [{ [Op.gte]: new Date() }, { [Op.lte]: new Date() }],
-      };
+  queryParams.where = {};
+
+  const dateQuery = [];
+  if (req.query.status && req.query.status !== "all") {
+    if (req.query.status === "archiv") {
+      dateQuery.push({
+        [Op.and]: [{ startDate: { [Op.lt]: new Date() } }, { endDate: { [Op.lt]: new Date() } }],
+      });
+    } else if (req.query.status === "aktiv") {
+      dateQuery.push({
+        [Op.and]: [{ startDate: { [Op.lte]: new Date() } }, { endDate: { [Op.gte]: new Date() } }],
+      });
+    } else if (req.query.status === "geplant") {
+      dateQuery.push({
+        [Op.and]: [{ startDate: { [Op.gt]: new Date() } }, { endDate: { [Op.gt]: new Date() } }],
+      });
+    } else if (Array.isArray(req.query.status)) {
+      req.query.status.forEach((status) => {
+        if (status === "archiv") {
+          dateQuery.push({
+            [Op.and]: [{ startDate: { [Op.lt]: new Date() } }, { endDate: { [Op.lt]: new Date() } }],
+          });
+        } else if (status === "aktiv") {
+          dateQuery.push({
+            [Op.and]: [{ startDate: { [Op.lte]: new Date() } }, { endDate: { [Op.gte]: new Date() } }],
+          });
+        } else if (status === "geplant") {
+          dateQuery.push({
+            [Op.and]: [{ startDate: { [Op.gt]: new Date() } }, { endDate: { [Op.gt]: new Date() } }],
+          });
+        }
+      });
     }
+
+    queryParams.where = {
+      [Op.or]: dateQuery,
+    };
   }
-  queryParams.where = dateQuery;
-  if (req.query.category) {
-    if (queryParams.where === undefined) {
-      queryParams.where = {};
-    }
+
+  if (req.query.category && req.query.category !== "all") {
     queryParams.where.category = req.query.category;
   }
 

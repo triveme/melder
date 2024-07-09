@@ -2,18 +2,18 @@ require("dotenv/config");
 const nodemailer = require("nodemailer");
 
 const RECIPIENTS = {
-  road_sign:process.env.ROAD_SIGN,
-  parking_spaces:process.env.PARKING_SPACES,
-  streets:process.env.STREETS,
-  waters:process.env.WATERS,
-  community_centre:process.env.COMMUNITY_CENTRE,
-  wild_garbage_dumping:process.env.WILD_GARBAGE_DUMPING,
-  trash_cans:process.env.TRASH_CANS,
-  public_toilets:process.env.PUBLIC_TOILETS,
-  parks:process.env.PARKS,
-  leisure_facilities:process.env.LEISURE_FACILITIES,
-  lamps:process.env.LAMPS,
-  other:process.env.OTHER,
+  road_sign: process.env.ROAD_SIGN,
+  parking_spaces: process.env.PARKING_SPACES,
+  streets: process.env.STREETS,
+  waters: process.env.WATERS,
+  community_centre: process.env.COMMUNITY_CENTRE,
+  wild_garbage_dumping: process.env.WILD_GARBAGE_DUMPING,
+  trash_cans: process.env.TRASH_CANS,
+  public_toilets: process.env.PUBLIC_TOILETS,
+  parks: process.env.PARKS,
+  leisure_facilities: process.env.LEISURE_FACILITIES,
+  lamps: process.env.LAMPS,
+  other: process.env.OTHER,
 };
 
 exports.sendMail = async (data, files) => {
@@ -28,30 +28,34 @@ exports.sendMail = async (data, files) => {
     if (data != undefined || data != null) {
       const transporter = buildTransporter();
       const mailObject = buildMailObject(data, files);
-      var response = "Test";
-      var response = transporter
+      const response = transporter
         .sendMail(mailObject)
         .then((res) => {
           return res;
         })
         .catch((error) => {
-          console.log(error);
+          console.error(error);
           return error;
         });
 
       return response;
     }
-    console.log("No data provided");
+    console.error("No data provided");
     return new Error("No data provided");
   } else {
-    console.log("No mail configuration provided");
+    console.log("data");
+    console.log(data);
+    console.log("files");
+    console.log(files);
+    console.log(buildMailObject(data, files));
+    console.error("No mail configuration provided");
     return new Error("No mail configuration provided");
   }
 };
 
 function buildMailObject(data, files) {
   const html = buildHtmlBody(data);
-  var mailObject = {
+  let mailObject = {
     from: '"Mängelmelder Hünfeld" <' + process.env.MAIL_FROM + ">",
     to: getRecipient(data.recipient),
     subject: "Neue Mängel-Meldung",
@@ -73,7 +77,7 @@ function buildMailObject(data, files) {
 }
 
 function buildHtmlBody(data) {
-  var htmlBody = `
+  let htmlBody = `
         <h1>Neue Mängel-Meldung</h1>
         <p>
         <strong>Email:</strong> ${data.email}<br>
@@ -83,19 +87,22 @@ function buildHtmlBody(data) {
     htmlBody += `
         <strong>Telefonnummer:</strong> ${data.phone_no}<br>`;
   }
-  if (data.lat && data.lng) {
-    htmlBody += `
-        <br><strong>Latitude:</strong> ${data.lat}<br>
-        <strong>Longitude:</strong> ${data.lng}<br>
-        <a href="https://google.com/maps/?q=${data.lat},${data.lng}">Position auf Google Maps anzeigen</a><br>`;
-  } else {
-    htmlBody += `
-        <br><strong>Ort:</strong> ${data.city}<br>
-        <strong>Postleitzahl:</strong> ${data.zip}<br>
-        <strong>Adresse:</strong> ${data.street + " " + data.house_no}<br>
-        <a href="https://google.com/maps/?q=${data.city} ${data.zip} ${
-      data.street
-    } ${data.house_no}">Position auf Google Maps anzeigen</a><br>`;
+  if (data.location) {
+    const locationObject = JSON.parse(data.location);
+    if (locationObject.lat && locationObject.lng) {
+      htmlBody += `
+          <br><strong>Latitude:</strong> ${locationObject.lat}<br>
+          <strong>Longitude:</strong> ${locationObject.lng}<br>
+          <a href="https://google.com/maps/?q=${locationObject.lat},${locationObject.lng}">Position auf Google Maps anzeigen</a><br>`;
+    } else if (locationObject.city && locationObject.zip && locationObject.street && locationObject.house_no) {
+      htmlBody += `
+          <br><strong>Ort:</strong> ${locationObject.city}<br>
+          <strong>Postleitzahl:</strong> ${locationObject.zip}<br>
+          <strong>Adresse:</strong> ${locationObject.street + " " + locationObject.house_no}<br>
+          <a href="https://google.com/maps/?q=${locationObject.city} ${locationObject.zip} ${locationObject.street} ${
+            locationObject.house_no
+          }">Position auf Google Maps anzeigen</a><br>`;
+    }
   }
   htmlBody += `
   <br><strong>Beschreibung:</strong> ${data.description}<br>

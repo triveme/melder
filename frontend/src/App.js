@@ -38,17 +38,21 @@ const ReportPage = lazy(() =>
     default: module.ReportPage,
   })),
 );
-const InfoPage = lazy(() =>
-  import(/* webpackPrefetch: true */ "./pages/info-page").then((module) => ({
-    default: module.InfoPage,
+const ClimatePage = lazy(() =>
+  import(/* webpackPrefetch: true */ "./pages/climate-page").then((module) => ({
+    default: module.ClimatePage,
   })),
 );
-const AdminPage = lazy(() =>
-  import(/* webpackPrefetch: true */ "./pages/admin-page").then((module) => ({
-    default: module.AdminPage,
+const SenorPage = lazy(() =>
+  import(/* webpackPrefetch: true */ "./pages/sensor-page").then((module) => ({
+    default: module.SenorPage,
   })),
 );
-
+const UserManagementPage = lazy(() =>
+  import(/* webpackPrefetch: true */ "./pages/user-management-page").then((module) => ({
+    default: module.UserManagementPage,
+  })),
+);
 const ListPage = lazy(() =>
   import(/* webpackPrefetch: true */ "./pages/list-page").then((module) => ({
     default: module.ListPage,
@@ -59,12 +63,16 @@ function ContentPage(url) {
   switch (url.url) {
     case "/melder":
       return <ReportPage />;
+    case "/klima":
+      return <ClimatePage />;
     case "/maengel":
       return <DeficiencyPage />;
-    case "/info":
-      return <InfoPage />;
-    case "/admin":
-      return <AdminPage />;
+    case "/sensor":
+      return <SenorPage />;
+    case process.env.REACT_APP_INFO_URL:
+      return "Du wirst weitergeleitet...";
+    case "/nutzer":
+      return <UserManagementPage />;
     case "/meldungen":
       return <ListPage />;
     default:
@@ -91,11 +99,6 @@ function App() {
   const handleCloseWelcomeText = () => {
     setOpenWelcomeText(false);
   };
-
-  //redirect to www
-  if (!window.location.host.startsWith("www")) {
-    window.location = window.location.protocol + "//www." + window.location.host + window.location.pathname;
-  }
 
   return (
     <Suspense fallback="lädt...">

@@ -55,7 +55,7 @@ module.exports = {
         type: Sequelize.STRING,
       },
       description: {
-        type: Sequelize.STRING,
+        type: Sequelize.STRING(2100),
       },
       startDate: {
         type: Sequelize.DATE,

@@ -1,8 +1,13 @@
 const bcrypt = require("bcryptjs");
 const db = require("../db/models");
 const Admin = db.admin;
+const { ensurePermission } = require("../utils/ensure-permission");
 
 exports.getAdmins = async (req, res) => {
+  if (!ensurePermission(req, res, "admin_perm")) {
+    return; // Return early if permissions are not sufficient
+  }
+
   const admins = await Admin.findAll({
     attributes: { exclude: ["password"] },
   });
@@ -10,6 +15,10 @@ exports.getAdmins = async (req, res) => {
 };
 
 exports.postAdmin = async (req, res) => {
+  if (!ensurePermission(req, res, "admin_perm")) {
+    return; // Return early if permissions are not sufficient
+  }
+
   if (!req.body.username || !req.body.password) {
     res.status(400).send({
       message: "Fehlende(r) Parameter",
@@ -29,7 +38,7 @@ exports.postAdmin = async (req, res) => {
   });
   if (numberOfBlockingAdmins > 0) {
     res.status(400).send({
-      message: "Admin mit diesem Nutzernamen existiert bereits",
+      message: "Nutzer mit diesem Nutzernamen existiert bereits",
     });
     return;
   }
@@ -37,6 +46,7 @@ exports.postAdmin = async (req, res) => {
   const admin = {
     username: req.body.username,
     password: bcrypt.hashSync(req.body.password, 10),
+    permissions: req.body.permissions ? req.body.permissions : null,
   };
   Admin.create(admin)
     .then((data) => {
@@ -44,14 +54,16 @@ exports.postAdmin = async (req, res) => {
     })
     .catch((err) => {
       res.status(500).send({
-        message:
-          err.message ||
-          "Während der Erzeugung des Admins ist ein Datenbankfehler aufgetreten",
+        message: err.message || "Während der Erzeugung des Nutzers ist ein Datenbankfehler aufgetreten",
       });
     });
 };
 
 exports.updateAdmin = async (req, res) => {
+  if (!ensurePermission(req, res, "admin_perm")) {
+    return; // Return early if permissions are not sufficient
+  }
+
   if (!req.params.adminId || !req.body.username || !req.body.password) {
     res.status(400).send({
       message: "Fehlende(r) Parameter",
@@ -62,7 +74,7 @@ exports.updateAdmin = async (req, res) => {
   const admin = await Admin.findByPk(req.params.adminId);
   if (!admin) {
     res.status(400).send({
-      message: "Der Admin wurde nicht gefunden",
+      message: "Der Nutzer wurde nicht gefunden",
     });
     return;
   }
@@ -78,23 +90,26 @@ exports.updateAdmin = async (req, res) => {
     .update({
       username: req.body.username,
       password: bcrypt.hashSync(req.body.password, 10),
+      permissions: req.body.permissions ? req.body.permissions : null,
     })
     .then((data) => {
       res.status(200).send(data);
     })
     .catch((err) => {
       res.status(400).send({
-        message:
-          err.message ||
-          "Inkorrekte Admindaten, die Aktualisierung funktioniert nicht",
+        message: err.message || "Inkorrekte Nutzerdaten, die Aktualisierung funktioniert nicht",
       });
     });
 };
 
 exports.deleteAdmin = async (req, res) => {
+  if (!ensurePermission(req, res, "admin_perm")) {
+    return; // Return early if permissions are not sufficient
+  }
+
   if (!req.params.adminId) {
     res.status(400).send({
-      message: "Fehlende adminId.",
+      message: "Fehlende Id.",
     });
     return;
   }
@@ -109,8 +124,7 @@ exports.deleteAdmin = async (req, res) => {
   const admins = await Admin.findAll();
   if (admins.length < 2) {
     res.status(400).send({
-      message:
-        "Admin kann nicht gelöscht werden, da immer mindestens ein Admin existieren muss",
+      message: "Nutzer kann nicht gelöscht werden, da immer mindestens ein Nutzer existieren muss",
     });
     return;
   }
@@ -118,7 +132,7 @@ exports.deleteAdmin = async (req, res) => {
   const admin = await Admin.findByPk(req.params.adminId);
   if (!admin) {
     res.status(400).send({
-      message: "Admin wurde nicht gefunden",
+      message: "Nutzer wurde nicht gefunden",
     });
     return;
   }
@@ -130,9 +144,7 @@ exports.deleteAdmin = async (req, res) => {
     })
     .catch((err) => {
       res.status(500).send({
-        message:
-          err.message ||
-          "Während des Löschens des Admins ist ein Datenbankfehler aufgetreten",
+        message: err.message || "Während des Löschens des Nutzers ist ein Datenbankfehler aufgetreten",
       });
     });
 };

@@ -4,8 +4,27 @@ import AddIcon from "@mui/icons-material/Add";
 import { Stack } from "@mui/material";
 
 import { useStateContext } from "../../providers/state-provider";
-import { checkSizeAndType } from "../../utils/image-utils";
 import useSmallWidth from "../../providers/use-small-width";
+import Resizer from "react-image-file-resizer";
+
+export const resizeFile = (file) => {
+  return new Promise((resolve) => {
+    Resizer.imageFileResizer(
+      file,
+      1280, // max width
+      720, // max height
+      "png", // compress format
+      0.8, // quality
+      0, // rotation
+      (resizedFile) => {
+        resolve(resizedFile);
+      },
+      "file", // output type
+      null, // min width
+      null, // min height
+    );
+  });
+};
 
 const iconStyle = {
   // backgroundColor: "background.paper",
@@ -26,30 +45,45 @@ const addImageStyle = {
   borderColor: "primary.main",
 };
 
-export function ImagePreview({ report, edit, imageCount, setRemovedImages, removedImages }) {
+export function ImagePreview({ type, element, edit, imageCount, setRemovedImages, removedImages }) {
+  if (!type) {
+    throw new Error("ImagePreview: type is undefined");
+  }
+
   const { stateContext, setStateContext } = useStateContext();
-  const { images } = stateContext.reporter;
+  const { images } = type === "construction" ? stateContext.reporter : stateContext.climateReporter;
   const isSmallWith = useSmallWidth();
 
   const handleRemoveImage = (index, savedImg) => {
-    if (savedImg && report && report.imgPath && report.imgPath.length > index) {
-      setRemovedImages((prevState) => [...prevState, report.imgPath[index]]);
+    if (savedImg && element && element.imgPath && element.imgPath.length > index) {
+      setRemovedImages((prevState) => [...prevState, element.imgPath[index]]);
     } else {
       if (typeof index !== "undefined" && typeof images !== "undefined" && images.length > index) {
         const updatedImages = images;
         updatedImages.splice(index, 1);
-        setStateContext({
-          ...stateContext,
-          reporter: {
-            ...stateContext.reporter,
-            images: updatedImages,
-          },
-        });
+
+        if (type === "construction") {
+          setStateContext({
+            ...stateContext,
+            reporter: {
+              ...stateContext.reporter,
+              images: updatedImages,
+            },
+          });
+        } else if (type === "climate") {
+          setStateContext({
+            ...stateContext,
+            climateReporter: {
+              ...stateContext.climateReporter,
+              images: updatedImages,
+            },
+          });
+        }
       }
     }
   };
 
-  const handleAddImage = (event) => {
+  const handleAddImage = async (event) => {
     let maxSize = 3;
     let filesToAdd = [];
 
@@ -61,24 +95,48 @@ export function ImagePreview({ report, edit, imageCount, setRemovedImages, remov
       maxSize = event.target.files.length;
     }
 
-    filesToAdd = checkSizeAndType(event.target.files, maxSize);
+    try {
+      filesToAdd = await Promise.all([...event.target.files].map((file) => resizeFile(file)));
+    } catch (error) {
+      console.error(error);
+    }
 
     if (images) {
-      setStateContext({
-        ...stateContext,
-        reporter: {
-          ...stateContext.reporter,
-          images: [...images, ...filesToAdd],
-        },
-      });
+      if (type === "construction") {
+        setStateContext({
+          ...stateContext,
+          reporter: {
+            ...stateContext.reporter,
+            images: [...images, ...filesToAdd],
+          },
+        });
+      } else if (type === "climate") {
+        setStateContext({
+          ...stateContext,
+          climateReporter: {
+            ...stateContext.climateReporter,
+            images: [...images, ...filesToAdd],
+          },
+        });
+      }
     } else {
-      setStateContext({
-        ...stateContext,
-        reporter: {
-          ...stateContext.reporter,
-          images: [...filesToAdd],
-        },
-      });
+      if (type === "construction") {
+        setStateContext({
+          ...stateContext,
+          reporter: {
+            ...stateContext.reporter,
+            images: [...filesToAdd],
+          },
+        });
+      } else if (type === "climate") {
+        setStateContext({
+          ...stateContext,
+          climateReporter: {
+            ...stateContext.climateReporter,
+            images: [...filesToAdd],
+          },
+        });
+      }
     }
   };
 
@@ -130,8 +188,8 @@ export function ImagePreview({ report, edit, imageCount, setRemovedImages, remov
   return (
     <Grid container spacing={2} mt={0}>
       {/* show saved images */}
-      {edit && report.imgPath && report.imgPath.length > 0
-        ? report.imgPath.map((path, index) => {
+      {edit && element.imgPath && element.imgPath.length > 0
+        ? element.imgPath.map((path, index) => {
             return removedImages.includes(path) ? null : getImage(true, index, path, null);
           })
         : null}

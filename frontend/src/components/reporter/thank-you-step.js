@@ -2,10 +2,13 @@ import { Box } from "@mui/system";
 import { Typography } from "@mui/material";
 import { Button } from "@mui/material";
 
-import { reporter } from "../../config/reporter";
-import { MarkerPin } from "../../elements/marker-pin";
+import { CONSTRUCTION_REPORTER, CLIMATE_REPORTER } from "../../config/reporter";
 
-export function ThankYouStep({ onPostFinished }) {
+export function ThankYouStep({ category }) {
+  if (!category) {
+    throw new Error("category is required");
+  }
+
   return (
     <Box
       square
@@ -17,14 +20,11 @@ export function ThankYouStep({ onPostFinished }) {
       }}
     >
       <Typography variant="body2" sx={{ mb: 1 }}>
-        {reporter.finalStep.thanks}
+        {category === "contruction" ? CONSTRUCTION_REPORTER.finalStep.thanks : CLIMATE_REPORTER.finalStep.thanks}
       </Typography>
-      <Box display="flex" justifyContent="center">
-        <MarkerPin report={{ status: "hidden" }} onClick={null} />
-      </Box>
-      <Button onClick={onPostFinished} sx={{ mt: 1, mr: 1 }}>
+      <Button sx={{ mt: 1, mr: 1 }}>
         <Typography variant="button" component="div">
-          {reporter.close}
+          {category === "contruction" ? CONSTRUCTION_REPORTER.close : CLIMATE_REPORTER.close}
         </Typography>
       </Button>
     </Box>

@@ -3,9 +3,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import { Stack } from "@mui/material";
 
-import { checkSizeAndType } from "../../utils/image-utils";
 import useSmallWidth from "../../providers/use-small-width";
 import { useDeficiencyContext } from "../../providers/deficiency-provider";
+import { resizeFile } from "../../components/reporter/image-preview";
 
 const iconStyle = {
   // backgroundColor: "background.paper",
@@ -42,9 +42,8 @@ export function DeficiencyImagePreview({ imageCount }) {
     }
   };
 
-  const handleAddImage = (event) => {
+  const handleAddImage = async (event) => {
     let maxSize = 3;
-    let filesToAdd = [];
 
     maxSize -= imageCount;
 
@@ -54,7 +53,13 @@ export function DeficiencyImagePreview({ imageCount }) {
       maxSize = event.target.files.length;
     }
 
-    filesToAdd = checkSizeAndType(event.target.files, maxSize);
+    let filesToAdd = [];
+
+    try {
+      filesToAdd = await Promise.all([...event.target.files].map((file) => resizeFile(file)));
+    } catch (error) {
+      console.error(error);
+    }
 
     if (images) {
       setDeficiencyContext({

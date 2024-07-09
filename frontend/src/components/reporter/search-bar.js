@@ -1,58 +1,94 @@
-import * as React from "react";
-import Paper from "@mui/material/Paper";
-import InputBase from "@mui/material/InputBase";
-import Divider from "@mui/material/Divider";
-import IconButton from "@mui/material/IconButton";
-import SearchIcon from "@mui/icons-material/Search";
-import { useState } from "react";
+import { useControl } from "react-map-gl";
+import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import { useStateContext } from "../../providers/state-provider";
-import colors from "../../theme/colors";
-import { useTheme } from "@emotion/react";
 
-export function SearchBar() {
-  const theme = useTheme();
+/* eslint-disable complexity,max-statements */
+export default function SearchBar(props) {
   const { stateContext, setStateContext } = useStateContext();
 
-  const [name, setName] = useState("");
+  const geocoder = useControl(
+    () => {
+      const ctrl = new MapboxGeocoder({
+        ...props,
+        marker: false,
+        language: "de",
+        // We don't want to query for big areas
+        types: "postcode,place,locality,neighborhood,address,poi",
+        // We only want results in the vicinity of Hünfeld
+        bbox: [9.62016649548092, 50.59665284083877, 9.85389054448384, 50.742482403961034],
+        accessToken: props.mapboxAccessToken,
+      });
+      ctrl.on("loading", props.onLoading);
+      ctrl.on("results", props.onResults);
+      ctrl.on("result", (evt) => {
+        props.onResult(evt);
 
-  const handleChange = (event) => {
-    setName(event.target.value);
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    setStateContext({
-      ...stateContext,
-      address: name,
-      triggerAddressSearch: !stateContext.triggerAddressSearch,
-    });
-  };
-
-  return (
-    <Paper
-      component="form"
-      elevation={4}
-      // variant="outlined"
-      sx={{
-        mt: 2,
-        p: "2px 4px",
-        display: "flex",
-        alignItems: "center",
-        width: {xs: 250, sm: 400},
-      }}
-      style={{ backgroundColor: theme.palette.mode === "light" ? colors.white : colors.paperDark }}
-    >
-      <InputBase
-        sx={{ ml: 1, flex: 1 }}
-        placeholder="Adresssuche"
-        inputProps={{ "aria-label": "search google maps" }}
-        value={name}
-        onChange={handleChange}
-      />
-      <IconButton type="submit" sx={{ p: "10px" }} aria-label="search" onClick={handleSubmit}>
-        <SearchIcon />
-      </IconButton>
-      <Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
-    </Paper>
+        const { result } = evt;
+        const location =
+          result && (result.center || (result.geometry?.type === "Point" && result.geometry.coordinates));
+        if (location) {
+          setStateContext({
+            ...stateContext,
+            address: result.place_name,
+            location: { longitude: location[0], latitude: location[1] },
+          });
+        }
+      });
+      ctrl.on("error", props.onError);
+      return ctrl;
+    },
+    {
+      position: props.position,
+    },
   );
+
+  if (geocoder._map) {
+    if (geocoder.getProximity() !== props.proximity && props.proximity !== undefined) {
+      geocoder.setProximity(props.proximity);
+    }
+    if (geocoder.getRenderFunction() !== props.render && props.render !== undefined) {
+      geocoder.setRenderFunction(props.render);
+    }
+    if (geocoder.getLanguage() !== props.language && props.language !== undefined) {
+      geocoder.setLanguage(props.language);
+    }
+    if (geocoder.getZoom() !== props.zoom && props.zoom !== undefined) {
+      geocoder.setZoom(props.zoom);
+    }
+    if (geocoder.getFlyTo() !== props.flyTo && props.flyTo !== undefined) {
+      geocoder.setFlyTo(props.flyTo);
+    }
+    if (geocoder.getPlaceholder() !== props.placeholder && props.placeholder !== undefined) {
+      geocoder.setPlaceholder(props.placeholder);
+    }
+    if (geocoder.getCountries() !== props.countries && props.countries !== undefined) {
+      geocoder.setCountries(props.countries);
+    }
+    if (geocoder.getTypes() !== props.types && props.types !== undefined) {
+      geocoder.setTypes(props.types);
+    }
+    if (geocoder.getMinLength() !== props.minLength && props.minLength !== undefined) {
+      geocoder.setMinLength(props.minLength);
+    }
+    if (geocoder.getLimit() !== props.limit && props.limit !== undefined) {
+      geocoder.setLimit(props.limit);
+    }
+    if (geocoder.getFilter() !== props.filter && props.filter !== undefined) {
+      geocoder.setFilter(props.filter);
+    }
+    if (geocoder.getOrigin() !== props.origin && props.origin !== undefined) {
+      geocoder.setOrigin(props.origin);
+    }
+  }
+  return null;
 }
+
+const noop = () => {};
+
+SearchBar.defaultProps = {
+  marker: true,
+  onLoading: noop,
+  onResults: noop,
+  onResult: noop,
+  onError: noop,
+};

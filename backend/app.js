@@ -45,7 +45,7 @@ createInitialAdminIfNeeded = async () => {
     "Created inital admin with username: " +
       process.env.DEFAULT_ADMIN_USERNAME +
       " and password: " +
-      process.env.DEFAULT_ADMIN_PASSWORD
+      process.env.DEFAULT_ADMIN_PASSWORD,
   );
   console.log("PLEASE CHANGE THE PASSWORD IMMEDIATELY!");
   console.log("");
@@ -54,8 +54,9 @@ createInitialAdminIfNeeded = async () => {
 const app = express();
 
 const FRONTEND_HOST = process.env.FRONTEND_HOST || "*";
+const FRONTEND_HOST_WWW = process.env.FRONTEND_HOST_WWW || "*";
 var corsOptions = {
-  origin: FRONTEND_HOST,
+  origin: [FRONTEND_HOST, FRONTEND_HOST_WWW],
 };
 app.use(cors(corsOptions));
 

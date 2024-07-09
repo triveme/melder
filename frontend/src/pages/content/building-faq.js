@@ -2,7 +2,7 @@ import { Grid } from "@mui/material";
 import { useTheme } from "@emotion/react";
 
 import useDesktop from "../../providers/use-desktop";
-import { CATEGORIES } from "../../constants";
+import { CONSTRUCTION_CATEGORIES } from "../../constants";
 import { ImageCard } from "../../components/info-components/image-card";
 
 import sonstigesLight from "../../assets/images/categories/Cat_sonstiges_light.svg";
@@ -14,7 +14,7 @@ export function BuildingFAQ() {
 
   const categories = [];
 
-  CATEGORIES.forEach((category) => {
+  CONSTRUCTION_CATEGORIES.forEach((category) => {
     categories.push({
       title: category.name,
       description: category.description,

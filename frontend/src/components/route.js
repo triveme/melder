@@ -1,16 +1,34 @@
 import { Source, Layer } from "react-map-gl";
 import colors from "../theme/colors";
 
-export function Route({ geojson, id, report }) {
-  const baseColor = report
-    ? report.status === "hidden"
-      ? colors.primaryDark
-      : report.endDate && new Date(report.endDate) < new Date()
-      ? colors.green
-      : report.startDate && new Date(report.startDate) > new Date()
-      ? colors.primary
-      : colors.rejected
-    : colors.primary;
+export function Route({ geojson, id, element, category }) {
+  if (!category) {
+    throw new Error("Route: category prop is required");
+  }
+
+  let baseColor = colors.primary;
+
+  if (element) {
+    if (category === "construction") {
+      baseColor =
+        element.status === "hidden"
+          ? colors.primaryDark
+          : element.endDate && new Date(element.endDate) < new Date()
+          ? colors.green
+          : element.startDate && new Date(element.startDate) > new Date()
+          ? colors.primary
+          : colors.rejected;
+    } else if (category === "climate") {
+      baseColor =
+        element.status === "hidden"
+          ? colors.primaryDark
+          : element.status === "finished"
+          ? colors.green
+          : element.status === "inProgress"
+          ? colors.rejected
+          : colors.primary;
+    }
+  }
 
   const routeLineStyle = {
     type: "line",
@@ -32,8 +50,7 @@ export function Route({ geojson, id, report }) {
   );
 }
 
-export function Redirection({ geojson, id, report }) {
-  // const baseColor = report && report.status === "hidden" ? colors.primaryDark : colors.redirection;
+export function Redirection({ geojson, id }) {
   const baseColor = colors.redirection;
 
   const redirectionLineStyle = {
